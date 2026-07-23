@@ -1,3 +1,4 @@
+import { AssetLibraryController } from "./js/assets.js";
 import { ControlsController } from "./js/controls.js";
 import { DragController } from "./js/drag.js";
 import { Editor } from "./js/editor.js";
@@ -15,6 +16,7 @@ function init() {
     previewVisual: document.getElementById("preview_visual")
   });
   const media = new MediaController({ editor });
+  new AssetLibraryController({ media });
   new ControlsController({ editor, media });
   const drag = new DragController({ editor });
   const exportOptions = new ExportOptionsController({ editor });

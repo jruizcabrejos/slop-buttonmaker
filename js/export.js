@@ -178,6 +178,8 @@ export class ExportController {
 
     try {
       await this.waitForImages(exportHost.button);
+      await this.applyImageCrops(exportHost.button, rendering);
+      await this.waitForImages(exportHost.button);
 
       const renderScale =
         rendering === "smooth" ? SMOOTH_RENDER_SCALE : 1;
@@ -271,6 +273,91 @@ export class ExportController {
     host.appendChild(button);
     document.body.appendChild(host);
     return { host, button };
+  }
+
+  async applyImageCrops(root, rendering) {
+    const croppedImages = root.querySelectorAll("img[data-crop-left]");
+    const scale = rendering === "smooth" ? SMOOTH_RENDER_SCALE : 1;
+
+    for (const image of croppedImages) {
+      const width = this.readNumber(
+        image.style.width,
+        image.offsetWidth
+      );
+      const height = this.readNumber(
+        image.style.height,
+        image.offsetHeight
+      );
+      const cropLeft = Number(image.dataset.cropLeft) || 0;
+      const cropTop = Number(image.dataset.cropTop) || 0;
+      const cropRight = Number(image.dataset.cropRight) || 0;
+      const cropBottom = Number(image.dataset.cropBottom) || 0;
+      const croppedWidth = width - cropLeft - cropRight;
+      const croppedHeight = height - cropTop - cropBottom;
+
+      if (croppedWidth <= 0 || croppedHeight <= 0) {
+        continue;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(croppedWidth * scale));
+      canvas.height = Math.max(1, Math.round(croppedHeight * scale));
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = rendering === "smooth";
+      if (context.imageSmoothingEnabled) {
+        context.imageSmoothingQuality = "high";
+      }
+
+      this.drawImageInBox(
+        context,
+        image,
+        image.style.objectFit,
+        -cropLeft * scale,
+        -cropTop * scale,
+        width * scale,
+        height * scale
+      );
+
+      const left = this.readNumber(image.style.left, image.offsetLeft);
+      const top = this.readNumber(image.style.top, image.offsetTop);
+      image.style.left = `${left + cropLeft}px`;
+      image.style.top = `${top + cropTop}px`;
+      image.style.width = `${croppedWidth}px`;
+      image.style.height = `${croppedHeight}px`;
+      image.style.objectFit = "fill";
+      image.style.clipPath = "none";
+      image.removeAttribute("data-crop-left");
+      image.removeAttribute("data-crop-top");
+      image.removeAttribute("data-crop-right");
+      image.removeAttribute("data-crop-bottom");
+      image.src = canvas.toDataURL("image/png");
+    }
+  }
+
+  drawImageInBox(context, image, objectFit, x, y, width, height) {
+    if (objectFit !== "contain") {
+      context.drawImage(image, x, y, width, height);
+      return;
+    }
+
+    const ratio = Math.min(
+      width / image.naturalWidth,
+      height / image.naturalHeight
+    );
+    const drawWidth = image.naturalWidth * ratio;
+    const drawHeight = image.naturalHeight * ratio;
+    context.drawImage(
+      image,
+      x + (width - drawWidth) / 2,
+      y + (height - drawHeight) / 2,
+      drawWidth,
+      drawHeight
+    );
+  }
+
+  readNumber(value, fallback) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
   }
 
   normalizeCanvas(renderedCanvas, rendering) {

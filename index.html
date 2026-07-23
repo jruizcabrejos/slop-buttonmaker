@@ -170,10 +170,17 @@
             <label for="background_color">Background color:</label>
             <input
               type="color"
-              value="#D3D3D3"
+              value="#808080"
               name="background"
               id="background_color"
             >
+            <button
+              type="button"
+              id="background_default"
+              title="Restore classic 88x31 gray"
+            >
+              Default
+            </button>
           </li>
           <li>
             <label for="border_color">Border color:</label>
@@ -210,7 +217,7 @@
             <input
               name="background"
               type="file"
-              accept="image/png,image/gif,image/jpeg,.png,.gif,.jpg,.jpeg"
+              accept="image/png,image/gif,image/jpeg,image/webp,image/svg+xml,.png,.gif,.jpg,.jpeg,.webp,.svg"
               id="background_image"
             >
           </li>
@@ -259,7 +266,7 @@
               type="file"
               id="new_image"
               name="new-image"
-              accept="image/gif,image/png,image/jpeg,.gif,.png,.jpg,.jpeg"
+              accept="image/gif,image/png,image/jpeg,image/webp,image/svg+xml,.gif,.png,.jpg,.jpeg,.webp,.svg"
             >
           </li>
           <li class="image-control-row hidden">
@@ -269,7 +276,6 @@
                 Keep proportions
               </option>
               <option value="free">Free resize</option>
-              <option value="crop">Crop to frame</option>
             </select>
           </li>
           <li class="image-control-row image-dimension-row hidden">
@@ -279,7 +285,7 @@
               id="new_image_height"
               value="31"
               min="1"
-              max="31"
+              max="132"
             >
           </li>
           <li class="image-control-row image-dimension-row hidden">
@@ -289,8 +295,17 @@
               id="new_image_width"
               value="31"
               min="1"
-              max="88"
+              max="172"
             >
+          </li>
+          <li class="image-control-row hidden">
+            <button
+              type="button"
+              id="crop_image"
+              title="Keep only the part overlapping the 88x31 button"
+            >
+              Crop to button
+            </button>
           </li>
         </ul>
       </section>
@@ -394,7 +409,32 @@
         aria-labelledby="tab-extra"
         aria-hidden="true"
       >
-        <ul>
+        <div class="asset-import-row">
+          <label for="local_asset_input">Local assets:</label>
+          <input
+            type="file"
+            id="local_asset_input"
+            accept="image/gif,image/png,image/jpeg,image/webp,image/svg+xml,.gif,.png,.jpg,.jpeg,.webp,.svg,.zip,application/zip"
+            multiple
+          >
+          <button
+            type="button"
+            id="clear_local_assets"
+            title="Remove imported assets from this browser"
+            disabled
+          >
+            Clear
+          </button>
+        </div>
+        <p
+          id="asset_import_status"
+          class="asset-import-status"
+          role="status"
+          aria-live="polite"
+        >
+          No local assets.
+        </p>
+        <ul class="detail-grid">
           <li>
             <button type="button" class="detail-option">
               <img src="graphics/a1.png" alt="win95">
@@ -446,6 +486,11 @@
             </button>
           </li>
         </ul>
+        <ul
+          id="local_asset_list"
+          class="detail-grid"
+          aria-label="Imported local assets"
+        ></ul>
       </section>
 
       <section

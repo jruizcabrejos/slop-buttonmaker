@@ -204,10 +204,6 @@ aside li:not(.menu-heading) {
   cursor: grabbing;
 }
 
-.button img {
-  max-height: 31px;
-}
-
 .text-layer,
 #font_preview .message {
   width: max-content;
@@ -288,6 +284,11 @@ input[type="color"] {
   padding: 0 2px;
 }
 
+#background_default {
+  margin-left: 5px;
+  padding: 2px 5px;
+}
+
 .text-content-row {
   min-height: 58px !important;
   align-items: flex-start !important;
@@ -323,12 +324,41 @@ input[type="color"] {
   display: none;
 }
 
-section.extra ul {
+.asset-import-row,
+.asset-import-status {
+  min-height: 25px;
+  margin: 0;
+  padding: 5px;
+  box-sizing: border-box;
+  background-color: #babade;
+  border: 2px outset #babade;
+  box-shadow: 0 0 0 1px #000;
+}
+
+.asset-import-row {
+  display: flex;
+  align-items: center;
+}
+
+.asset-import-row label {
+  flex: 0 0 auto;
+}
+
+.asset-import-row button {
+  margin-left: 4px;
+  padding: 2px 5px;
+}
+
+.asset-import-status {
+  line-height: 15px;
+}
+
+section.extra .detail-grid {
   display: flex;
   flex-wrap: wrap;
 }
 
-section.extra li {
+section.extra .detail-grid li {
   width: 20%;
   min-height: 50px;
   padding: 5px;
@@ -346,6 +376,7 @@ section.extra li {
 
 .detail-option img {
   max-width: 100%;
+  max-height: 100%;
 }
 
 #results {

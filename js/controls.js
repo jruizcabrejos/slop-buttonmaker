@@ -11,8 +11,12 @@ export class ControlsController {
     this.tutorials = document.querySelectorAll(
       "#tutorials img[data-tutorial]"
     );
+    this.backgroundColor = document.getElementById("background_color");
+    this.backgroundDefault = document.getElementById(
+      "background_default"
+    );
     this.baseControls = [
-      document.getElementById("background_color"),
+      this.backgroundColor,
       document.getElementById("border_color"),
       document.getElementById("border_width"),
       document.getElementById("border_style"),
@@ -28,6 +32,8 @@ export class ControlsController {
 
     this.handleBaseControl = this.handleBaseControl.bind(this);
     this.handleTabKeydown = this.handleTabKeydown.bind(this);
+    this.applyDefaultBackground =
+      this.applyDefaultBackground.bind(this);
     this.previewFont = this.previewFont.bind(this);
     this.drawText = this.drawText.bind(this);
 
@@ -35,6 +41,10 @@ export class ControlsController {
     this.bindBaseControls();
     this.bindTextControls();
     this.bindDetails();
+    this.backgroundDefault.addEventListener(
+      "click",
+      this.applyDefaultBackground
+    );
     this.applyBaseDefaults();
     this.previewFont();
     this.activateTab("base");
@@ -143,6 +153,12 @@ export class ControlsController {
     }
   }
 
+  applyDefaultBackground() {
+    this.backgroundColor.value = this.backgroundColor.defaultValue;
+    this.media.clearBackgroundImage();
+    this.editor.button.style.background = this.backgroundColor.value;
+  }
+
   applyBaseDefaults() {
     this.applyBorderWidth();
     this.editor.button.style.borderColor =
@@ -151,7 +167,7 @@ export class ControlsController {
       document.getElementById("border_style").value;
     this.editor.button.style.background =
       document.getElementById("background_gradient").value ||
-      document.getElementById("background_color").value;
+      this.backgroundColor.value;
     this.editor.button.style.backgroundSize =
       document.getElementById("background_size").value;
   }
