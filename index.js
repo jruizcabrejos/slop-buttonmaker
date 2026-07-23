@@ -1,7 +1,9 @@
 "use strict";
 
 (function() {
-  let dragIndex;
+  const DRAG_THRESHOLD = 3;
+  let activeDrag = null;
+  let dragIndex = 0;
 
   window.addEventListener("load", init);
 
@@ -34,7 +36,8 @@
     for (let i = 0; i < imageDims.length; i++) {
       imageDims[i].addEventListener("change", setImageDims);
     }
-    
+
+    window.addEventListener("blur", cancelDrag);
     buildABase();
   }
 
@@ -264,64 +267,111 @@
    * @param {*} elmnt element to be made draggable
   */
   function makeDraggable(elmnt) {
-    // I named it that because it was a POS to write!!
-    let pos = {
-      pos1: 0,
-      pos2: 0,
-      pos3: 0,
-      pos4: 0
+    const elements =
+      typeof elmnt.length === "number" ? elmnt : [elmnt];
+
+    for (let i = 0; i < elements.length; i++) {
+      elements[i].draggable = false;
+      elements[i].addEventListener("pointerdown", startDrag);
+    }
+  }
+
+  function startDrag(e) {
+    if (!e.isPrimary || e.button !== 0) {
+      return;
+    }
+
+    cancelDrag();
+    e.preventDefault();
+    e.stopPropagation();
+
+    const element = e.currentTarget;
+    dragIndex += 1;
+    element.style.zIndex = dragIndex;
+    element.classList.add("is-dragging");
+
+    activeDrag = {
+      element: element,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startLeft: readPosition(element.style.left, element.offsetLeft),
+      startTop: readPosition(element.style.top, element.offsetTop),
+      moved: false
     };
 
-    if (elmnt.length) {
-      for (let i = 0; i < elmnt.length; i++) {
-        elmnt[i].addEventListener('mousedown', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          dragIndex += 1;
-          this.style["zIndex"] = dragIndex;
-          pos["pos3"] = e.clientX;
-          pos["pos4"] = e.clientY;
-          this.addEventListener('mousemove', dragElement);
-        });
-        elmnt[i].addEventListener('mouseup', removeDrag);
-      }
-    } else {
-      elmnt.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dragIndex += 1;
-        this.style["zIndex"] = dragIndex;
-        pos["pos3"] = e.clientX;
-        pos["pos4"] = e.clientY;
-        this.addEventListener('mousemove', dragElement);
-      });
-      elmnt.addEventListener('mouseup', removeDrag);
+    element.addEventListener("lostpointercapture", endDrag);
+    window.addEventListener("pointermove", dragElement, {
+      passive: false
+    });
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+
+    if (element.setPointerCapture) {
+      element.setPointerCapture(e.pointerId);
+    }
+  }
+
+  function dragElement(e) {
+    if (!activeDrag || e.pointerId !== activeDrag.pointerId) {
+      return;
     }
 
-    /**
-     * Changes the position when the mouse is pressed
-     * @param {Event} e - the event of the
-     * element being dragged
-     */
-    function dragElement(e) {
-      pos = {
-        pos1: pos["pos3"] - e.clientX,
-        pos2: pos["pos4"] - e.clientY,
-        pos3: e.clientX,
-        pos4: e.clientY
-      }
+    const deltaX = e.clientX - activeDrag.startClientX;
+    const deltaY = e.clientY - activeDrag.startClientY;
 
-      let left = this.offsetLeft - pos["pos1"];
-      let top = this.offsetTop - pos["pos2"];
-
-      this.style.top = top + "px";
-      this.style.left = left + "px";
+    if (
+      !activeDrag.moved &&
+      Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD
+    ) {
+      return;
     }
 
-    /** Removes the drag */
-    function removeDrag() {
-      this.removeEventListener('mousemove', dragElement);
+    e.preventDefault();
+    activeDrag.moved = true;
+    activeDrag.element.style.left =
+      Math.round(activeDrag.startLeft + deltaX) + "px";
+    activeDrag.element.style.top =
+      Math.round(activeDrag.startTop + deltaY) + "px";
+  }
+
+  function endDrag(e) {
+    if (activeDrag && e.pointerId === activeDrag.pointerId) {
+      finishDrag();
     }
+  }
+
+  function cancelDrag() {
+    if (activeDrag) {
+      finishDrag();
+    }
+  }
+
+  function finishDrag() {
+    const drag = activeDrag;
+
+    if (!drag) {
+      return;
+    }
+
+    activeDrag = null;
+    drag.element.classList.remove("is-dragging");
+    drag.element.removeEventListener("lostpointercapture", endDrag);
+    window.removeEventListener("pointermove", dragElement);
+    window.removeEventListener("pointerup", endDrag);
+    window.removeEventListener("pointercancel", endDrag);
+
+    if (
+      drag.element.hasPointerCapture &&
+      drag.element.hasPointerCapture(drag.pointerId)
+    ) {
+      drag.element.releasePointerCapture(drag.pointerId);
+    }
+  }
+
+  function readPosition(value, fallback) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
   }
 
   /* ------------------------------ Helper Functions  ------------------------------ */

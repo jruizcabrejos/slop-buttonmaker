@@ -55,6 +55,22 @@ main,
   cursor: pointer;
 }
 
+#stage .button,
+#stage .button > * {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+#stage .button img {
+  -webkit-user-drag: none;
+}
+
+#stage .button.is-dragging,
+#stage .button > .is-dragging {
+  cursor: grabbing;
+}
+
 #tutorials img,
 .hidden,
 .menu,
