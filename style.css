@@ -1,160 +1,18 @@
-aside,
-input[type="number"],
-input[type="text"],
-main,
-select,
-#hints,
-#stage,
-#tutorials,
-.menu {
-  border: 1px solid;
-}
-
-body > ol li {
-  margin-bottom: 10px;
-}
-
-section.text label,
-section.text p,
-ul,
-#submit_text,
-.menu > ul li {
-  margin: 0;
-}
-
-body > ol a,
-body > p,
-body > p a,
-#hints {
-  color: yellow;
-}
-
 body,
 button,
 input,
-select {
-  font: 10pt 'w95faregular';
-}
-
-.button,
-.button > *,
-#hints,
-#stage,
-#stage *,
-#submit_text {
-  position: absolute;
-}
-
-main,
-#submit_img {
-  display: block;
-}
-
-#stage div {
-  color: #fff;
-  cursor: pointer;
-}
-
-#tutorials img,
-.hidden,
-.menu,
-.menu ul li.hidden {
-  display: none;
-}
-
-aside ul,
-#tutorials ul,
-.menu > ul {
-  min-height: 100%;
-}
-
-aside h4,
-#tutorials h4 {
-  padding-left: 5px;
-  color: white;
-}
-
-aside ul,
-#tutorials ul {
-  flex-flow: column;
-}
-
-aside ul,
-section.extra ul,
-section.text label,
-#submit_text,
-#tutorials ul,
-.menu > ul li,
-.visible {
-  display: flex;
-}
-
-aside ul > li,
-#tutorials ul > li {
-  flex: 1;
-}
-
-aside ul > li:nth-child(1),
-#tutorials ul > li:nth-child(1) {
-  max-height: 25px;
-}
-
-.menu form {
-  width: calc(100% - 14px);
-}
-
-aside,
-section.text label,
-#stage,
-#tutorials,
-#tutorials img.visible {
-  display: inline-block;
-}
-
-aside,
-section.text label,
-#stage,
-#tutorials {
-  width: 33%;
-}
-
-#tutorials img.visible {
-  width: calc(100% - 4px);
-  display: inline-block;
-}
-
-aside,
-#tutorials > ul {
-  height: 200px;
-}
-
-main,
-#stage {
-  overflow: hidden;
+select,
+textarea {
+  font: 10pt "w95faregular";
+  letter-spacing: 0;
 }
 
 body {
+  min-width: 650px;
+  margin: 8px;
   text-align: center;
   background-color: #00817f;
   color: #000;
-}
-
-ul {
-  padding: 0;
-}
-
-ul li {
-  list-style-type: none;
-}
-
-button,
-input[type="color"],
-section.text label,
-section.text p,
-ul li {
-  background-color: #babade;
-  border: 2px outset #babade;
-  box-shadow: 0px 0px 0px 1px #000;
 }
 
 main,
@@ -164,100 +22,363 @@ main,
 
 main {
   width: 630px;
-  max-height: 100%;
   margin: 0 auto;
 }
 
-aside {
-  margin: -1px 0px 0px -1px;
-  float: left;
+ul {
+  margin: 0;
+  padding: 0;
 }
 
-#stage {
-  width: calc(33% - 18px);
-  height: 178px;
-  margin: 10px;
-  background-color: #000;
-}
-
-#stage img {
-  max-height: 31px;
-}
-
-#tutorials {
-  float: right;
-  margin: -1px;
-}
-
-.menu {
-  max-height: 400px;
-  padding-right: 20px;
-  height: calc(100% - 201px);
-  margin: -4px -1px -1px -1px;
-  overflow-y: scroll;
-}
-
-section.text label,
-section.text p,
-.menu,
-.menu > ul {
-  width: 100%;
-}
-
-input[type="color"] {
-  height: 20px;
-  width: 20px;
-  padding: 0px 2px;
-}
-
-section.text label,
-#submit_text,
-.menu > ul li {
-  height: 25px;
-  align-items: center;
+ul li {
+  list-style-type: none;
 }
 
 button,
-section.text label,
-section.text p,
-.menu > ul li {
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+button {
   padding: 5px;
+  cursor: pointer;
 }
 
-label {
-  margin-right: 5px;
+button,
+input[type="color"],
+.menu > ul > li,
+.text form > label,
+#font_preview,
+#stage_toolbar {
+  background-color: #babade;
+  border: 2px outset #babade;
+  box-shadow: 0 0 0 1px #000;
 }
 
-input[type="number"] {
-  width: 35px;
+button:active,
+.menu-tab.is-active {
+  border-style: inset;
 }
 
-ul > li > h4 {
-  width: calc(100% - 8px);
-  height: 17px;
-  padding-top: 3px;
-  margin-top: 2px;
-  background: linear-gradient(90deg,
-  rgba(61,61,119,1) 0%,
-  rgba(186,142,200,1) 100%);
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
 }
 
-#tutorials img {
-  height: calc(100% - 4px);
-  width: calc(100% - 4px);
+aside,
+#stage,
+#tutorials,
+.menu,
+#hints {
   border: 1px solid #000;
 }
 
-section.extra {
-  flex-direction: row;
+#workspace {
+  display: grid;
+  grid-template-columns: 210px 210px 210px;
+  height: 201px;
+}
+
+aside,
+#tutorials {
+  height: 200px;
+}
+
+aside > ul,
+#tutorials > ul {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.menu-heading {
+  flex: 0 0 25px;
+  background-color: #3d3d77;
+  background-image: linear-gradient(
+    90deg,
+    #3d3d77 0%,
+    #ba8ec8 100%
+  );
+}
+
+aside h4,
+#tutorials h4 {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 5px;
+  box-sizing: border-box;
+  color: #fff;
+  background: transparent;
+}
+
+aside li:not(.menu-heading) {
+  flex: 1;
+}
+
+.menu-tab {
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  color: #000;
+}
+
+.menu-tab.is-active {
+  color: #fff;
+  background-color: #7272a5;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    inset -1px -1px 0 #d8d8ef;
+}
+
+#editor_column {
+  height: 200px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+#stage_toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 25px;
+  padding: 2px 5px;
+  box-sizing: border-box;
+}
+
+#zoom_level {
+  width: 55px;
+}
+
+#stage {
+  position: relative;
+  width: 190px;
+  height: 150px;
+  margin-top: 5px;
+  padding: 8px;
+  overflow: auto;
+  box-sizing: border-box;
+  background-color: #000;
+}
+
+#preview_bounds {
+  position: relative;
+  flex: none;
+}
+
+#preview_visual {
+  position: relative;
+  width: 172px;
+  height: 132px;
+  transform-origin: top left;
+}
+
+.button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.button.is-dragging {
+  cursor: grabbing;
+}
+
+.editor-layer {
+  position: absolute;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  -webkit-user-drag: none;
+}
+
+.editor-layer.is-dragging {
+  cursor: grabbing;
+}
+
+.button img {
+  max-height: 31px;
+}
+
+.text-layer,
+#font_preview .message {
+  width: max-content;
+  white-space: pre;
+  line-height: normal;
+}
+
+#tutorials {
+  margin-left: -1px;
+}
+
+#tutorials .tutorial-content {
+  min-height: 0;
+  flex: 1;
+}
+
+#tutorials img {
+  display: none;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  border: 1px solid #000;
+}
+
+#tutorials img.visible {
+  display: inline-block;
+}
+
+.menu {
+  display: none;
+  width: 100%;
+  max-height: 400px;
+  margin-top: -1px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.menu.visible {
+  display: block;
+}
+
+.menu > ul,
+.menu form {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.menu > ul > li,
+.text form > label,
+#font_preview {
+  display: flex;
+  min-height: 25px;
+  margin: 0;
+  padding: 5px;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.menu label {
+  margin-right: 5px;
+}
+
+.menu input[type="text"],
+.menu input[type="file"],
+.text textarea {
+  min-width: 0;
+  flex: 1;
+}
+
+input[type="number"] {
+  width: 45px;
+  border: 1px solid #000;
+}
+
+input[type="color"] {
+  width: 24px;
+  height: 22px;
+  padding: 0 2px;
+}
+
+.text-content-row {
+  min-height: 58px !important;
+  align-items: flex-start !important;
+}
+
+.text-content-row span {
+  flex: 0 0 auto;
+  padding-top: 3px;
+}
+
+.text textarea {
+  min-height: 42px;
+  resize: vertical;
+}
+
+#font_preview {
+  display: block;
+  min-height: 25px;
+  overflow: auto;
+}
+
+#font_preview .message {
+  display: inline-block;
+  vertical-align: top;
+}
+
+#submit_text {
+  margin: 2px 0;
+}
+
+.hidden,
+.menu > ul > li.hidden {
+  display: none;
 }
 
 section.extra ul {
+  display: flex;
   flex-wrap: wrap;
 }
 
 section.extra li {
-  width: calc(20% - 14px);
+  width: 20%;
+  min-height: 50px;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.detail-option {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.detail-option img {
+  max-width: 100%;
+}
+
+#results {
+  margin: 10px 0;
+}
+
+#reset_button {
+  margin-right: 4px;
+}
+
+#hints {
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  width: 180px;
+  margin: 0;
+  padding: 20px;
+  background-color: teal;
+}
+
+#hints li {
+  margin-bottom: 10px;
+}
+
+body > ol a,
+body > p,
+body > p a,
+#hints {
+  color: #ff0;
+}
+
+body > p {
+  margin: 6px auto;
 }
 
 .glow_box {
@@ -268,32 +389,77 @@ section.extra li {
   animation: 5s glow-text;
 }
 
-#stage {
-  width: 190px;
+.export-host {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 88px;
+  height: 31px;
+  overflow: hidden;
+  text-align: left;
 }
 
-#hints {
-  width: 10%;
-  top: 7px;
-  padding: 20px;
-  left: calc(90% - 60px);
-  background-color: teal;
+.export-animation-source {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  max-width: none;
+  max-height: none;
+  pointer-events: none;
 }
 
-#submit_text {
-  margin-top: 1px;
+@media (max-width: 1050px) {
+  #hints {
+    position: static;
+    width: 590px;
+    margin: 15px auto;
+  }
 }
 
-/* ANIMATIONS */
+@media (max-width: 680px) {
+  body {
+    min-width: 0;
+  }
+
+  main {
+    width: calc(100% - 8px);
+  }
+
+  #workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  #editor_column {
+    width: 210px;
+    justify-self: center;
+  }
+
+  #tutorials {
+    margin-left: 0;
+  }
+
+  #hints {
+    width: calc(100% - 16px);
+    box-sizing: border-box;
+  }
+
+  body > p {
+    max-width: calc(100% - 16px);
+  }
+}
+
 @keyframes glow-box {
-  50% {box-shadow: 0px 0px 3px 3px #fff;}
+  50% {
+    box-shadow: 0 0 3px 3px #fff;
+  }
 }
 
 @keyframes glow-text {
   50% {
     text-shadow:
-    0px 0px 3px #fff,
-    0px 0px 3px #fff,
-    0px 0px 3px #fff;
+      0 0 3px #fff,
+      0 0 3px #fff,
+      0 0 3px #fff;
   }
 }

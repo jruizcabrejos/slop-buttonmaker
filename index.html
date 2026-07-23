@@ -1,200 +1,316 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    >
     <title>88x31 Web Button Maker</title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" type="text/css" href="font/stylesheet.css">
     <link rel="icon" type="image/png" href="favicon.png">
-    <script src="index.js"></script>
-    <script type="text/javascript" src="html2canvas/html2canvas.min.js"></script>
+    <script
+      type="text/javascript"
+      src="html2canvas/html2canvas.min.js"
+    ></script>
+    <script type="module" src="index.js"></script>
   </head>
   <body>
     <main>
-      <aside>
+      <div id="workspace">
+        <aside aria-label="Editor menu">
+          <ul role="tablist" aria-label="Button options">
+            <li class="menu-heading">
+              <h4>Menu</h4>
+            </li>
+            <li>
+              <button
+                type="button"
+                id="tab-base"
+                class="menu-tab is-active"
+                role="tab"
+                data-value="base"
+                aria-controls="panel-base tutorial-base"
+                aria-selected="true"
+              >
+                Backgrounds
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                id="tab-images"
+                class="menu-tab"
+                role="tab"
+                data-value="images"
+                aria-controls="panel-images tutorial-images"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                Add an image
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                id="tab-text"
+                class="menu-tab"
+                role="tab"
+                data-value="text"
+                aria-controls="panel-text tutorial-text"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                Add some text
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                id="tab-extra"
+                class="menu-tab"
+                role="tab"
+                data-value="extra"
+                aria-controls="panel-extra tutorial-extra"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                Fancy Details
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                id="tab-extended"
+                class="menu-tab"
+                role="tab"
+                data-value="extended"
+                aria-controls="panel-extended"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                Extended options
+              </button>
+            </li>
+          </ul>
+        </aside>
+
+        <section id="editor_column" aria-label="Button editor">
+          <div id="stage_toolbar">
+            <label for="zoom_level">Zoom:</label>
+            <select id="zoom_level">
+              <option value="1">1x</option>
+              <option value="2">2x</option>
+              <option value="3">3x</option>
+              <option value="4">4x</option>
+            </select>
+          </div>
+          <section id="stage" aria-label="Button preview">
+            <div id="preview_bounds">
+              <div id="preview_visual"></div>
+            </div>
+          </section>
+        </section>
+
+        <section id="tutorials" aria-label="Tutorial preview">
+          <ul>
+            <li class="menu-heading">
+              <h4>How to:</h4>
+            </li>
+            <li class="tutorial-content">
+              <a href="graphics/tutorial/backgrounds.gif" target="_blank">
+                <img
+                  id="tutorial-base"
+                  src="graphics/tutorial/backgrounds.gif"
+                  alt="Backgrounds tutorial"
+                  data-tutorial="base"
+                  class="visible"
+                >
+              </a>
+              <a href="graphics/tutorial/images.gif" target="_blank">
+                <img
+                  id="tutorial-images"
+                  src="graphics/tutorial/images.gif"
+                  alt="Images tutorial"
+                  data-tutorial="images"
+                >
+              </a>
+              <a href="graphics/tutorial/text.gif" target="_blank">
+                <img
+                  id="tutorial-text"
+                  src="graphics/tutorial/text.gif"
+                  alt="Text tutorial"
+                  data-tutorial="text"
+                >
+              </a>
+              <a href="graphics/tutorial/details.gif" target="_blank">
+                <img
+                  id="tutorial-extra"
+                  src="graphics/tutorial/details.gif"
+                  alt="Details tutorial"
+                  data-tutorial="extra"
+                >
+              </a>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <section
+        id="panel-base"
+        class="menu base visible"
+        data-panel="base"
+        role="tabpanel"
+        aria-labelledby="tab-base"
+        aria-hidden="false"
+      >
         <ul>
           <li>
-            <h4>
-              Menu
-            </h4>
-          </li>
-          <li data-value="base">
-            Backgrounds
-          </li>
-          <li data-value="images">
-            Add an image
-          </li>
-          <li data-value="text">
-            Add some text
-          </li>
-          <li data-value="extra">
-            Fancy Details
-          </li>
-        </ul>
-      </aside>
-      <section id="stage">
-      </section>
-      <section id="tutorials">
-        <ul>
-          <li>
-            <h4>
-              How to:
-            </h4>
-          </li>
-          <li>
-            <a href="graphics/tutorial/backgrounds.gif" target="_blank">
-              <img
-              src="graphics/tutorial/backgrounds.gif"
-              alt="backgrounds tutorial"
-              class="base visible">
-            </a>
-            <a href="graphics/tutorial/images.gif" target="_blank">
-              <img
-              src="graphics/tutorial/images.gif"
-              alt="images tutorial"
-              class="images">
-            </a>
-            <a href="graphics/tutorial/text.gif" target="_blank">
-              <img
-              src="graphics/tutorial/text.gif"
-              alt="text tutorial"
-              class="text">
-            </a>
-            <a href="graphics/tutorial/details.gif">
-              <img
-              src="graphics/tutorial/details.gif"
-              alt="details tutorial"
-              class="extra">
-            </a>
-          </li>
-        </ul>
-      </section>
-      <section class="menu visible base">
-        <ul>
-          <li>
-            <label for="background_color">
-              Background color:
-            </label>
+            <label for="background_color">Background color:</label>
             <input
-            type="color"
-            value="#D3D3D3"
-            name="background"
-            id="background_color"
+              type="color"
+              value="#D3D3D3"
+              name="background"
+              id="background_color"
             >
           </li>
           <li>
-            <label for="border_color">
-              Border color:
-            </label>
+            <label for="border_color">Border color:</label>
             <input
-            type="color"
-            value="#D3D3D3"
-            name="border-color"
-            id="border_color"
+              type="color"
+              value="#D3D3D3"
+              name="border-color"
+              id="border_color"
             >
           </li>
           <li>
-            <label for="border_width">
-              Border width:
-            </label>
+            <label for="border_width">Border width:</label>
             <input
-            type="number"
-            value="1"
-            min="0"
-            max="15"
-            name="border-width"
-            id="border_width"
+              type="number"
+              value="1"
+              min="0"
+              max="15"
+              name="border-width"
+              id="border_width"
             >
           </li>
           <li>
-            <label for="border_style">
-              Border style
-            </label>
+            <label for="border_style">Border style:</label>
             <select name="border-style" id="border_style">
               <option value="solid">Solid</option>
               <option value="outset" selected>Outset</option>
               <option value="inset">Inset</option>
               <option value="dashed">Dashed</option>
-              <option value="dashed">Dotted</option>
+              <option value="dotted">Dotted</option>
             </select>
           </li>
           <li>
-            <label for="background_image">
-              Background image:
-            </label>
+            <label for="background_image">Background image:</label>
             <input
-            name="background"
-            type="file"
-            accept="image/png, image/gif, image/jpeg"
-            id="background_image"
+              name="background"
+              type="file"
+              accept="image/png,image/gif,image/jpeg,.png,.gif,.jpg,.jpeg"
+              id="background_image"
             >
           </li>
           <li>
-            <label for="background_size">
-              Background image size:
-            </label>
+            <label for="background_size">Background image size:</label>
             <select name="background-size" id="background_size">
               <option value="100% 100%">stretch</option>
               <option value="contain" selected>tiling</option>
             </select>
           </li>
           <li>
-            <label for="background_gradient">
-              Background gradient
-            </label>
-            <input type="text"
-						name="background"
-						id="background_gradient"
-						value="linear-gradient(0deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)"
-						>
+            <label for="background_gradient">Background gradient:</label>
+            <input
+              type="text"
+              name="background"
+              id="background_gradient"
+              value="linear-gradient(0deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)"
+            >
           </li>
           <li>
             <p>
               HINT: generate the gradient
-              <a href="https://cssgradient.io/" rel="noopener" target="_blank">
-                 here,
-              </a>
-               then paste the css style above!
+              <a
+                href="https://cssgradient.io/"
+                rel="noopener"
+                target="_blank"
+              >here,</a>
+              then paste the CSS style above!
             </p>
           </li>
         </ul>
-        <br>
       </section>
-      <section class="menu images">
+
+      <section
+        id="panel-images"
+        class="menu images"
+        data-panel="images"
+        role="tabpanel"
+        aria-labelledby="tab-images"
+        aria-hidden="true"
+      >
         <ul>
           <li>
-            <label for="new_image">
-              Choose an image:
-            </label>
+            <label for="new_image">Choose an image:</label>
             <input
-            type="file"
-            id="new_image"
-            name="new-image"
-            accept="image/gif, image/png, image/jpeg"
+              type="file"
+              id="new_image"
+              name="new-image"
+              accept="image/gif,image/png,image/jpeg,.gif,.png,.jpg,.jpeg"
             >
           </li>
-          <li class="hidden">
-            <label for="new_image_height">
-              Image Height:
-            </label>
-            <input type="number" id="new_image_height" value="31" min="1" max="31">
+          <li class="image-control-row hidden">
+            <label for="new_image_mode">Image mode:</label>
+            <select id="new_image_mode">
+              <option value="proportional" selected>
+                Keep proportions
+              </option>
+              <option value="free">Free resize</option>
+              <option value="crop">Crop to frame</option>
+            </select>
           </li>
-          <li class="hidden">
-            <label for="new_image_width">
-              Image Width:
-            </label>
-            <input type="number" id="new_image_width" value="31" min="1" max="31">
+          <li class="image-control-row image-dimension-row hidden">
+            <label for="new_image_height">Image Height:</label>
+            <input
+              type="number"
+              id="new_image_height"
+              value="31"
+              min="1"
+              max="31"
+            >
+          </li>
+          <li class="image-control-row image-dimension-row hidden">
+            <label for="new_image_width">Image Width:</label>
+            <input
+              type="number"
+              id="new_image_width"
+              value="31"
+              min="1"
+              max="88"
+            >
           </li>
         </ul>
       </section>
-      <section class="menu text">
+
+      <section
+        id="panel-text"
+        class="menu text"
+        data-panel="text"
+        role="tabpanel"
+        aria-labelledby="tab-text"
+        aria-hidden="true"
+      >
         <form>
-          <label for="text_content">
-            Enter your message:
-					  <input type="text" id="text_content" required>
+          <label class="text-content-row" for="text_content">
+            <span>Enter your message:</span>
+            <textarea id="text_content" rows="2" required></textarea>
           </label>
           <label for="font_color">
             Text Color:
-            <input type="color" id="font_color">
+            <input type="color" id="font_color" value="#000000">
           </label>
           <label for="font_family">
             Font family:
@@ -203,15 +319,23 @@
               <option value="verdana">Verdana</option>
               <option value="w95faregular">w95faregular</option>
               <option value="Dico">Dico</option>
-              <option value="3D Thirteen Pixel Fonts">3D Thirteen Pixel Fonts</option>
+              <option value="3D Thirteen Pixel Fonts">
+                3D Thirteen Pixel Fonts
+              </option>
               <option value="KiwiSoda">Kiwi Soda</option>
               <option value="CursivePixel">Cursive</option>
-              <option value="FFF Galaxy">FFF Galzy</option>
-              <option value="Cloude Regular 1.0">Cloude Regular 1.0</option>
+              <option value="FFF Galaxy">FFF Galaxy</option>
+              <option value="Cloude Regular 1.0">
+                Cloude Regular 1.0
+              </option>
               <option value="Pixel Arial 11">Pixel Arial 11</option>
-              <option value="Perfect DOS VGA 437 Win">Perfect DOS VGA 437 Win</option>
+              <option value="Perfect DOS VGA 437 Win">
+                Perfect DOS VGA 437 Win
+              </option>
               <option value="Pixel-Western">Pixel-Western</option>
-              <option value="Windows Command Prompt">Windows Command Prompt</option>
+              <option value="Windows Command Prompt">
+                Windows Command Prompt
+              </option>
               <option value="PixelPlay">PixelPlay</option>
               <option value="silkscreen">silkscreen</option>
             </select>
@@ -234,7 +358,7 @@
               <option value="none">None</option>
               <option value="line-through">Line Through</option>
               <option value="overline">Overline</option>
-              <option value="underline" >Underline</option>
+              <option value="underline">Underline</option>
             </select>
           </label>
           <label for="font_style">
@@ -253,75 +377,157 @@
             </select>
           </label>
           <p id="font_preview">
-            Preview: <span class="message">Sphynx of black quartz, judge my vow</span>
+            Preview:
+            <span class="message">
+              Sphynx of black quartz, judge my vow
+            </span>
           </p>
-          <button id="submit_text">
-            Submit!
-          </button>
+          <button type="submit" id="submit_text">Submit!</button>
         </form>
       </section>
-      <section class="menu extra">
+
+      <section
+        id="panel-extra"
+        class="menu extra"
+        data-panel="extra"
+        role="tabpanel"
+        aria-labelledby="tab-extra"
+        aria-hidden="true"
+      >
         <ul>
           <li>
-            <img src="graphics/a1.png" alt="win95">
+            <button type="button" class="detail-option">
+              <img src="graphics/a1.png" alt="win95">
+            </button>
           </li>
           <li>
-            <img src="graphics/a2.png" alt="www">
+            <button type="button" class="detail-option">
+              <img src="graphics/a2.png" alt="www">
+            </button>
           </li>
           <li>
-            <img src="graphics/a3.png" alt="Now!">
+            <button type="button" class="detail-option">
+              <img src="graphics/a3.png" alt="Now!">
+            </button>
           </li>
           <li>
-            <img src="graphics/a4.png" alt="hey">
+            <button type="button" class="detail-option">
+              <img src="graphics/a4.png" alt="hey">
+            </button>
           </li>
           <li>
-            <img src="graphics/a5.png" alt="black square">
+            <button type="button" class="detail-option">
+              <img src="graphics/a5.png" alt="black square">
+            </button>
           </li>
           <li>
-            <img src="graphics/a6.png" alt="globe">
+            <button type="button" class="detail-option">
+              <img src="graphics/a6.png" alt="globe">
+            </button>
           </li>
           <li>
-            <img src="graphics/a7.png" alt="netscape">
+            <button type="button" class="detail-option">
+              <img src="graphics/a7.png" alt="netscape">
+            </button>
           </li>
           <li>
-            <img src="graphics/a8.png" alt="95">
+            <button type="button" class="detail-option">
+              <img src="graphics/a8.png" alt="95">
+            </button>
           </li>
           <li>
-            <img src="graphics/a9.png" alt="no">
+            <button type="button" class="detail-option">
+              <img src="graphics/a9.png" alt="no">
+            </button>
           </li>
           <li>
-            <img src="graphics/a10.png" alt="windows">
+            <button type="button" class="detail-option">
+              <img src="graphics/a10.png" alt="windows">
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <section
+        id="panel-extended"
+        class="menu extended"
+        data-panel="extended"
+        role="tabpanel"
+        aria-labelledby="tab-extended"
+        aria-hidden="true"
+      >
+        <ul>
+          <li>
+            <label for="export_format">Export format:</label>
+            <select id="export_format">
+              <option value="png" selected>PNG</option>
+              <option value="gif">GIF</option>
+            </select>
+          </li>
+          <li>
+            <label for="export_rendering">Rendering:</label>
+            <select id="export_rendering">
+              <option value="smooth" selected>Smooth</option>
+              <option value="pixelated">Pixelated</option>
+            </select>
+          </li>
+          <li class="gif-export-row hidden">
+            <label for="gif_duration">GIF duration:</label>
+            <select id="gif_duration">
+              <option value="1">1 second</option>
+              <option value="2" selected>2 seconds</option>
+              <option value="3">3 seconds</option>
+              <option value="5">5 seconds</option>
+            </select>
+          </li>
+          <li class="gif-export-row hidden">
+            <label for="gif_frame_rate">GIF frame rate:</label>
+            <select id="gif_frame_rate">
+              <option value="5">5 FPS</option>
+              <option value="10" selected>10 FPS</option>
+              <option value="15">15 FPS</option>
+            </select>
+          </li>
+          <li class="gif-export-row hidden">
+            <label for="gif_loop">GIF loop:</label>
+            <select id="gif_loop">
+              <option value="0" selected>Forever</option>
+              <option value="-1">Once</option>
+            </select>
           </li>
         </ul>
       </section>
     </main>
+
     <div id="results">
-      <button id="save_img">
-        Save It!
-      </button>
+      <button type="button" id="reset_button">Reset</button>
+      <button type="button" id="save_img">Save It!</button>
     </div>
+
     <ol id="hints">
       <li>
-        Gif saving is not an option yet, sorry :-(.
+        GIF uploads animate in the editor and can be exported as GIFs.
       </li>
+      <li>To remove an element, double click on it.</li>
+      <li>The button, images, text, and details are draggable.</li>
       <li>
-        To remove an element, double click on it.
-      </li>
-      <li>
-        All elements on the stage are draggable!
-      </li>
-      <li>
-        If you have any suggestions, and especially
-        if you have any ideas about how to capture a div as a gif, let
-        me know <a 
-        href="https://github.com/hekate2/buttonmaker/issues"
-        target="_blank"
-        rel="noopener"
+        If you have any suggestions, let me know
+        <a
+          href="https://github.com/hekate2/buttonmaker/issues"
+          target="_blank"
+          rel="noopener"
         >here</a>!
       </li>
     </ol>
+
+    <p>Improved with love in 2022!</p>
     <p>
-    	Improved with love in 2022!
+      This is a forked experimental version from the original made by
+      <a
+        href="https://github.com/hekate2/buttonmaker"
+        target="_blank"
+        rel="noopener"
+      >hekate2/buttonmaker</a>.
     </p>
   </body>
 </html>
