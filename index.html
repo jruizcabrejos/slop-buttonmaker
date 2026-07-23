@@ -31,7 +31,7 @@
                 class="menu-tab is-active"
                 role="tab"
                 data-value="base"
-                aria-controls="panel-base tutorial-base"
+                aria-controls="panel-base"
                 aria-selected="true"
               >
                 Backgrounds
@@ -44,7 +44,7 @@
                 class="menu-tab"
                 role="tab"
                 data-value="images"
-                aria-controls="panel-images tutorial-images"
+                aria-controls="panel-images"
                 aria-selected="false"
                 tabindex="-1"
               >
@@ -58,7 +58,7 @@
                 class="menu-tab"
                 role="tab"
                 data-value="text"
-                aria-controls="panel-text tutorial-text"
+                aria-controls="panel-text"
                 aria-selected="false"
                 tabindex="-1"
               >
@@ -72,7 +72,7 @@
                 class="menu-tab"
                 role="tab"
                 data-value="extra"
-                aria-controls="panel-extra tutorial-extra"
+                aria-controls="panel-extra"
                 aria-selected="false"
                 tabindex="-1"
               >
@@ -113,47 +113,12 @@
           </section>
         </section>
 
-        <section id="tutorials" aria-label="Tutorial preview">
-          <ul>
-            <li class="menu-heading">
-              <h4>How to:</h4>
-            </li>
-            <li class="tutorial-content">
-              <a href="graphics/tutorial/backgrounds.gif" target="_blank">
-                <img
-                  id="tutorial-base"
-                  src="graphics/tutorial/backgrounds.gif"
-                  alt="Backgrounds tutorial"
-                  data-tutorial="base"
-                  class="visible"
-                >
-              </a>
-              <a href="graphics/tutorial/images.gif" target="_blank">
-                <img
-                  id="tutorial-images"
-                  src="graphics/tutorial/images.gif"
-                  alt="Images tutorial"
-                  data-tutorial="images"
-                >
-              </a>
-              <a href="graphics/tutorial/text.gif" target="_blank">
-                <img
-                  id="tutorial-text"
-                  src="graphics/tutorial/text.gif"
-                  alt="Text tutorial"
-                  data-tutorial="text"
-                >
-              </a>
-              <a href="graphics/tutorial/details.gif" target="_blank">
-                <img
-                  id="tutorial-extra"
-                  src="graphics/tutorial/details.gif"
-                  alt="Details tutorial"
-                  data-tutorial="extra"
-                >
-              </a>
-            </li>
-          </ul>
+        <section id="layers_panel" aria-label="Preview layers">
+          <div class="menu-heading">
+            <h4>Layers</h4>
+          </div>
+          <p id="layers_empty">No layers yet.</p>
+          <ol id="layer_list" aria-label="Layer stack"></ol>
         </section>
       </div>
 
@@ -165,6 +130,9 @@
         aria-labelledby="tab-base"
         aria-hidden="false"
       >
+        <div class="panel-heading">
+          <h4>Backgrounds</h4>
+        </div>
         <ul>
           <li>
             <label for="background_color">Background color:</label>
@@ -191,26 +159,28 @@
               id="border_color"
             >
           </li>
-          <li>
-            <label for="border_width">Border width:</label>
-            <input
-              type="number"
-              value="1"
-              min="0"
-              max="15"
-              name="border-width"
-              id="border_width"
-            >
-          </li>
-          <li>
-            <label for="border_style">Border style:</label>
-            <select name="border-style" id="border_style">
-              <option value="solid">Solid</option>
-              <option value="outset" selected>Outset</option>
-              <option value="inset">Inset</option>
-              <option value="dashed">Dashed</option>
-              <option value="dotted">Dotted</option>
-            </select>
+          <li class="control-pair">
+            <label for="border_width">
+              Border width:
+              <input
+                type="number"
+                value="1"
+                min="0"
+                max="15"
+                name="border-width"
+                id="border_width"
+              >
+            </label>
+            <label for="border_style">
+              Border style:
+              <select name="border-style" id="border_style">
+                <option value="solid">Solid</option>
+                <option value="outset" selected>Outset</option>
+                <option value="inset">Inset</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+              </select>
+            </label>
           </li>
           <li>
             <label for="background_image">Background image:</label>
@@ -248,6 +218,15 @@
               then paste the CSS style above!
             </p>
           </li>
+          <li>
+            <label for="button_effect">Button effect:</label>
+            <select id="button_effect">
+              <option value="none" selected>None</option>
+              <option value="glitch">Glitch</option>
+              <option value="shimmer">Shimmer</option>
+              <option value="rotate">Rotate</option>
+            </select>
+          </li>
         </ul>
       </section>
 
@@ -259,6 +238,9 @@
         aria-labelledby="tab-images"
         aria-hidden="true"
       >
+        <div class="panel-heading">
+          <h4>Add an image</h4>
+        </div>
         <ul>
           <li>
             <label for="new_image">Choose an image:</label>
@@ -318,15 +300,24 @@
         aria-labelledby="tab-text"
         aria-hidden="true"
       >
+        <div class="panel-heading">
+          <h4>Add some text</h4>
+        </div>
         <form>
           <label class="text-content-row" for="text_content">
             <span>Enter your message:</span>
             <textarea id="text_content" rows="2" required></textarea>
           </label>
-          <label for="font_color">
-            Text Color:
-            <input type="color" id="font_color" value="#000000">
-          </label>
+          <div class="form-row control-pair">
+            <label for="font_color">
+              Text color:
+              <input type="color" id="font_color" value="#000000">
+            </label>
+            <label for="font_size">
+              Font size:
+              <input type="number" id="font_size" value="10" min="1">
+            </label>
+          </div>
           <label for="font_family">
             Font family:
             <select id="font_family">
@@ -355,10 +346,6 @@
               <option value="silkscreen">silkscreen</option>
             </select>
           </label>
-          <label for="font_size">
-            Font size:
-            <input type="number" id="font_size" value="10" min="1">
-          </label>
           <label for="text_align">
             Text alignment:
             <select name="alignment" id="text_align">
@@ -376,19 +363,30 @@
               <option value="underline">Underline</option>
             </select>
           </label>
-          <label for="font_style">
-            Font style:
-            <select id="font_style">
-              <option value="italic">Italic</option>
-              <option value="normal" selected>Normal</option>
-            </select>
-          </label>
-          <label for="font_weight">
-            Font weight:
-            <select id="font_weight">
-              <option value="lighter">Lighter</option>
-              <option value="normal" selected>Normal</option>
-              <option value="bold">Bold</option>
+          <div class="form-row control-pair">
+            <label for="font_style">
+              Font style:
+              <select id="font_style">
+                <option value="italic">Italic</option>
+                <option value="normal" selected>Normal</option>
+              </select>
+            </label>
+            <label for="font_weight">
+              Font weight:
+              <select id="font_weight">
+                <option value="lighter">Lighter</option>
+                <option value="normal" selected>Normal</option>
+                <option value="bold">Bold</option>
+              </select>
+            </label>
+          </div>
+          <label for="text_effect">
+            Text effect:
+            <select id="text_effect">
+              <option value="none" selected>None</option>
+              <option value="bounce">Bounce</option>
+              <option value="glow">Glow</option>
+              <option value="fly-in">Fly in</option>
             </select>
           </label>
           <p id="font_preview">
@@ -409,6 +407,12 @@
         aria-labelledby="tab-extra"
         aria-hidden="true"
       >
+        <div class="panel-heading">
+          <h4>Fancy Details</h4>
+        </div>
+        <p class="asset-import-instructions">
+          (1) Click Choose Files (2) Select assets (GIF, PNG, ZIP...)
+        </p>
         <div class="asset-import-row">
           <label for="local_asset_input">Local assets:</label>
           <input
@@ -491,6 +495,29 @@
           class="detail-grid"
           aria-label="Imported local assets"
         ></ul>
+        <section
+          class="asset-sources"
+          aria-labelledby="asset_sources_title"
+        >
+          <h5 id="asset_sources_title">Asset downloads</h5>
+          <ul>
+            <li>
+              <a
+                href="https://websetsbylynn.neocities.org/"
+                target="_blank"
+                rel="noopener"
+                title="Visit Websets by Lynn"
+              >
+                <img
+                  src="graphics/sources/websets-by-lynn.png"
+                  width="88"
+                  height="31"
+                  alt="Websets by Lynn"
+                >
+              </a>
+            </li>
+          </ul>
+        </section>
       </section>
 
       <section
@@ -501,6 +528,9 @@
         aria-labelledby="tab-extended"
         aria-hidden="true"
       >
+        <div class="panel-heading">
+          <h4>Extended options</h4>
+        </div>
         <ul>
           <li>
             <label for="export_format">Export format:</label>
@@ -540,6 +570,16 @@
               <option value="-1">Once</option>
             </select>
           </li>
+          <li class="raw-project-row">
+            <button type="button" id="export_raw">Export raw</button>
+            <button type="button" id="import_raw">Import raw</button>
+            <input
+              type="file"
+              id="import_raw_file"
+              accept="application/json,.json"
+              hidden
+            >
+          </li>
         </ul>
       </section>
     </main>
@@ -550,29 +590,71 @@
     </div>
 
     <ol id="hints">
-      <li>
-        GIF uploads animate in the editor and can be exported as GIFs.
-      </li>
-      <li>To remove an element, double click on it.</li>
       <li>The button, images, text, and details are draggable.</li>
       <li>
         If you have any suggestions, let me know
         <a
-          href="https://github.com/hekate2/buttonmaker/issues"
+          href="https://github.com/jruizcabrejos/slop-buttonmaker/issues"
           target="_blank"
           rel="noopener"
         >here</a>!
       </li>
     </ol>
 
-    <p>Improved with love in 2022!</p>
     <p>
-      This is a forked experimental version from the original made by
+      Originally made with love in 2022 by
       <a
         href="https://github.com/hekate2/buttonmaker"
         target="_blank"
         rel="noopener"
-      >hekate2/buttonmaker</a>.
+      >hekate2/buttonmaker</a>
     </p>
+    <p>
+      This is a forked experimental version at
+      <a
+        href="https://github.com/jruizcabrejos/slop-buttonmaker"
+        target="_blank"
+        rel="noopener"
+      >jruizcabrejos/slop-buttonmaker</a>
+    </p>
+    <p>Inspired by:</p>
+    <div class="inspiration-buttons">
+      <a
+        href="https://ritual.sh/resources/button-generator/"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          src="graphics/inspired/ritual_1.gif"
+          width="88"
+          height="31"
+          alt="Ritual button generator"
+        >
+      </a>
+      <a
+        href="https://88x31.datakra.sh/"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          src="graphics/inspired/datakrash_88x31buttongenerator.gif"
+          width="88"
+          height="31"
+          alt="88x31 Button Generator by Datakrash"
+        >
+      </a>
+      <a
+        href="https://hekate2.github.io/buttonmaker/"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          src="graphics/inspired/hekate-button.png"
+          width="88"
+          height="31"
+          alt="Hekate button maker"
+        >
+      </a>
+    </div>
   </body>
 </html>

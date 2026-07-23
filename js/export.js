@@ -8,6 +8,11 @@ import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
 const SMOOTH_RENDER_SCALE = 4;
 const SNAPSHOT_WIDTH = BUTTON_WIDTH * SMOOTH_RENDER_SCALE;
 const SNAPSHOT_HEIGHT = BUTTON_HEIGHT * SMOOTH_RENDER_SCALE;
+const BOUNCE_DURATION = 800;
+const BOUNCE_DISTANCE = 4;
+const GLOW_DURATION = 1000;
+const FLY_IN_DURATION = 700;
+const BUTTON_EFFECT_DURATION = 1200;
 
 export class ExportOptionsController {
   constructor({ editor }) {
@@ -173,7 +178,8 @@ export class ExportController {
     const exportHost = this.createExportHost(
       imageSnapshots,
       backgroundSnapshot,
-      rendering
+      rendering,
+      animationTime
     );
 
     try {
@@ -231,7 +237,12 @@ export class ExportController {
     }
   }
 
-  createExportHost(imageSnapshots, backgroundSnapshot, rendering) {
+  createExportHost(
+    imageSnapshots,
+    backgroundSnapshot,
+    rendering,
+    animationTime
+  ) {
     const host = document.createElement("div");
     const button = this.editor.button.cloneNode(true);
     const clonedImages = button.querySelectorAll("img");
@@ -270,9 +281,102 @@ export class ExportController {
       );
     }
 
+    this.freezeTextEffects(button, animationTime);
+    this.freezeButtonEffect(button, animationTime);
     host.appendChild(button);
     document.body.appendChild(host);
     return { host, button };
+  }
+
+  freezeTextEffects(button, animationTime) {
+    for (const text of button.querySelectorAll("[data-text-effect]")) {
+      const effect = text.dataset.textEffect;
+      text.style.animation = "none";
+
+      switch (effect) {
+        case "bounce": {
+          const phase = Number.isFinite(animationTime)
+            ? (animationTime % BOUNCE_DURATION) / BOUNCE_DURATION
+            : 0;
+          const offset =
+            -BOUNCE_DISTANCE * Math.sin(Math.PI * phase);
+          text.style.transform = `translateY(${offset.toFixed(3)}px)`;
+          break;
+        }
+        case "glow": {
+          const phase = Number.isFinite(animationTime)
+            ? (animationTime % GLOW_DURATION) / GLOW_DURATION
+            : 0.25;
+          const blur = 2 + 4 * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
+          text.style.textShadow =
+            `0 0 ${blur.toFixed(2)}px #fff, ` +
+            `0 0 ${(blur * 1.5).toFixed(2)}px currentColor`;
+          break;
+        }
+        case "fly-in": {
+          const progress = Number.isFinite(animationTime)
+            ? Math.min(1, Math.max(0, animationTime / FLY_IN_DURATION))
+            : 1;
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const offset = -BUTTON_WIDTH * (1 - eased);
+          text.style.opacity = eased.toFixed(3);
+          text.style.transform = `translateX(${offset.toFixed(3)}px)`;
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+
+  freezeButtonEffect(button, animationTime) {
+    const effect = button.dataset.buttonEffect;
+    const overlay = button.querySelector(".button-effect-overlay");
+    const phase = Number.isFinite(animationTime)
+      ? (animationTime % BUTTON_EFFECT_DURATION) /
+        BUTTON_EFFECT_DURATION
+      : 0.25;
+
+    button.style.animation = "none";
+    if (overlay) {
+      overlay.style.animation = "none";
+    }
+
+    switch (effect) {
+      case "glitch": {
+        const offsets = [
+          [0, 0],
+          [1, 0],
+          [-1, 1],
+          [0, -1]
+        ];
+        const offset = offsets[Math.floor(phase * offsets.length) % 4];
+        button.style.transform =
+          `translate(${offset[0]}px, ${offset[1]}px)`;
+        if (overlay) {
+          overlay.style.display = "block";
+          overlay.style.opacity = phase > 0.5 ? "0.28" : "0.16";
+          overlay.style.backgroundPosition = `${phase * 12}px 0`;
+        }
+        break;
+      }
+      case "shimmer":
+        if (overlay) {
+          overlay.style.display = "block";
+          overlay.style.backgroundPosition =
+            `${(-120 + phase * 240).toFixed(2)}% 0`;
+        }
+        break;
+      case "rotate": {
+        const angle = Math.sin(phase * Math.PI * 2) * 2;
+        button.style.transform =
+          `scale(0.9) rotate(${angle.toFixed(3)}deg)`;
+        break;
+      }
+      default:
+        button.style.transform = "none";
+        break;
+    }
   }
 
   async applyImageCrops(root, rendering) {

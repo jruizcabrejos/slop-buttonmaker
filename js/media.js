@@ -44,6 +44,7 @@ export class MediaController {
     this.updateActiveImageMode =
       this.updateActiveImageMode.bind(this);
     this.cropActiveImage = this.cropActiveImage.bind(this);
+    this.handleLayerSelection = this.handleLayerSelection.bind(this);
     this.releaseAllUrls = this.releaseAllUrls.bind(this);
 
     this.backgroundInput.addEventListener(
@@ -64,6 +65,7 @@ export class MediaController {
 
     this.editor.onBeforeReset(() => this.prepareForReset());
     this.editor.onReset(() => this.resetControls());
+    this.editor.onSelectionChanged(this.handleLayerSelection);
     window.addEventListener("beforeunload", this.releaseAllUrls);
   }
 
@@ -74,9 +76,15 @@ export class MediaController {
       return;
     }
 
+    await this.addBackgroundFile(file, this.backgroundInput);
+  }
+
+  async addBackgroundFile(file, reportInput = null) {
     if (!this.isSupportedImage(file)) {
-      this.reportInvalidFile(this.backgroundInput);
-      return;
+      if (reportInput) {
+        this.reportInvalidFile(reportInput);
+      }
+      return false;
     }
 
     const request = ++this.backgroundRequest;
@@ -104,11 +112,15 @@ export class MediaController {
       document.body.appendChild(probe);
       this.editor.button.style.background = `url("${url}")`;
       this.editor.button.style.backgroundSize = this.backgroundSize.value;
+      return true;
     } catch {
       this.releasePendingUrl(url);
       if (request === this.backgroundRequest) {
-        this.reportInvalidFile(this.backgroundInput);
+        if (reportInput) {
+          this.reportInvalidFile(reportInput);
+        }
       }
+      return false;
     }
   }
 
@@ -122,7 +134,7 @@ export class MediaController {
     await this.addImageFile(file, this.imageInput);
   }
 
-  async addImageFile(file, reportInput = null) {
+  async addImageFile(file, reportInput = null, { type = "image" } = {}) {
     if (!this.isSupportedImage(file)) {
       if (reportInput) {
         this.reportInvalidFile(reportInput);
@@ -150,7 +162,7 @@ export class MediaController {
       this.prepareImageDimensions(image);
       this.applyImageDimensions(image);
       this.editor.addLayer(image, {
-        type: "image",
+        type,
         animationClass: "glow_box"
       });
       this.editor.registerLayerCleanup(image, () => {
@@ -311,6 +323,17 @@ export class MediaController {
     image.style.clipPath = "";
   }
 
+  handleLayerSelection(layer) {
+    if (
+      layer?.dataset.layerType === "image" &&
+      this.layerFiles.has(layer)
+    ) {
+      this.setActiveImage(layer);
+    } else {
+      this.clearActiveImage();
+    }
+  }
+
   setActiveImage(image) {
     if (this.activeImage) {
       this.activeImage.classList.remove("active_img");
@@ -318,13 +341,37 @@ export class MediaController {
 
     this.activeImage = image;
     image.classList.add("active_img");
+    this.imageMode.value = image.dataset.resizeMode || "proportional";
+    this.imageWidth.value = String(Math.round(
+      this.readPosition(image.style.width, image.offsetWidth)
+    ));
+    this.imageHeight.value = String(Math.round(
+      this.readPosition(image.style.height, image.offsetHeight)
+    ));
     this.setImageControlsHidden(false);
+  }
+
+  clearActiveImage() {
+    if (this.activeImage) {
+      this.activeImage.classList.remove("active_img");
+    }
+
+    this.activeImage = null;
+    this.setImageControlsHidden(true);
   }
 
   clearBackgroundImage() {
     this.backgroundRequest += 1;
     this.releaseBackgroundUrl();
     this.backgroundInput.value = "";
+  }
+
+  getBackgroundFile() {
+    return this.backgroundFile;
+  }
+
+  getLayerFile(image) {
+    return this.layerFiles.get(image) || null;
   }
 
   async prepareGifExport() {
@@ -372,8 +419,7 @@ export class MediaController {
     )?.value || "proportional";
     this.imageHeight.value = this.imageHeight.defaultValue;
     this.imageWidth.value = this.imageWidth.defaultValue;
-    this.activeImage = null;
-    this.setImageControlsHidden(true);
+    this.clearActiveImage();
   }
 
   releaseLayerUrl(image) {
@@ -391,8 +437,7 @@ export class MediaController {
     }
 
     if (this.activeImage === image) {
-      this.activeImage = null;
-      this.setImageControlsHidden(true);
+      this.clearActiveImage();
     }
   }
 

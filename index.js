@@ -2,11 +2,13 @@ import { AssetLibraryController } from "./js/assets.js";
 import { ControlsController } from "./js/controls.js";
 import { DragController } from "./js/drag.js";
 import { Editor } from "./js/editor.js";
+import { LayersController } from "./js/layers.js";
 import {
   ExportController,
   ExportOptionsController
 } from "./js/export.js";
 import { MediaController } from "./js/media.js";
+import { ProjectController } from "./js/project.js";
 import { initAddons } from "./js/addons/index.js";
 
 function init() {
@@ -17,10 +19,12 @@ function init() {
   });
   const media = new MediaController({ editor });
   new AssetLibraryController({ media });
-  new ControlsController({ editor, media });
+  const controls = new ControlsController({ editor, media });
+  new LayersController({ editor });
   const drag = new DragController({ editor });
   const exportOptions = new ExportOptionsController({ editor });
   new ExportController({ editor, media, options: exportOptions });
+  new ProjectController({ editor, media, controls });
   initAddons({ editor });
 
   editor.onBeforeReset(() => drag.cancel());

@@ -32,7 +32,7 @@ export class DragController {
     event.stopPropagation();
 
     element.dataset.dragMoved = "false";
-    this.editor.bringToFront(element);
+    this.editor.selectLayer(element === this.button ? null : element);
 
     this.activeDrag = {
       element,

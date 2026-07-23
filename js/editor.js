@@ -10,7 +10,11 @@ export class Editor {
     this.previewVisual = previewVisual;
     this.previewScale = 1;
     this.zIndex = 0;
+    this.layerSequence = 0;
     this.layerCleanups = new Map();
+    this.layersChangedHandlers = new Set();
+    this.selectionChangedHandlers = new Set();
+    this.selectedLayer = null;
     this.beforeResetHandlers = new Set();
     this.resetHandlers = new Set();
 
@@ -18,6 +22,11 @@ export class Editor {
     this.button.classList.add("button");
     this.button.dataset.draggable = "true";
     this.button.dataset.dragMoved = "false";
+
+    this.effectOverlay = document.createElement("div");
+    this.effectOverlay.classList.add("button-effect-overlay");
+    this.effectOverlay.setAttribute("aria-hidden", "true");
+    this.button.appendChild(this.effectOverlay);
     this.previewVisual.appendChild(this.button);
   }
 
@@ -30,6 +39,8 @@ export class Editor {
       element.dataset.layerType = type;
     }
 
+    this.layerSequence += 1;
+    element.dataset.layerId = `layer-${this.layerSequence}`;
     element.style.left = "0px";
     element.style.top = "0px";
 
@@ -56,7 +67,9 @@ export class Editor {
     }
 
     this.button.appendChild(element);
-    this.bringToFront(element);
+    this.normalizeLayerOrder();
+    this.selectLayer(element);
+    this.notifyLayersChanged();
     return element;
   }
 
@@ -69,27 +82,173 @@ export class Editor {
   }
 
   removeLayer(element) {
-    const cleanups = this.layerCleanups.get(element);
-
-    if (cleanups) {
-      for (const cleanup of cleanups) {
-        cleanup();
-      }
-      this.layerCleanups.delete(element);
+    if (!this.isLayer(element)) {
+      return;
     }
 
+    const layers = this.getLayers();
+    const removedIndex = layers.indexOf(element);
+    const wasSelected = this.selectedLayer === element;
+    this.runLayerCleanups(element);
     element.remove();
+    this.normalizeLayerOrder();
+
+    if (wasSelected) {
+      const remaining = this.getLayers();
+      this.selectedLayer =
+        remaining[Math.min(removedIndex, remaining.length - 1)] || null;
+      this.notifySelectionChanged();
+    }
+
+    this.notifyLayersChanged();
   }
 
   clearLayers() {
-    for (const layer of Array.from(this.button.children)) {
-      this.removeLayer(layer);
+    const hadSelection = Boolean(this.selectedLayer);
+
+    for (const layer of this.getLayers()) {
+      this.runLayerCleanups(layer);
+      layer.remove();
+    }
+
+    this.selectedLayer = null;
+    this.zIndex = 0;
+    this.notifyLayersChanged();
+
+    if (hadSelection) {
+      this.notifySelectionChanged();
     }
   }
 
   bringToFront(element) {
-    this.zIndex += 1;
-    element.style.zIndex = String(this.zIndex);
+    const layers = this.getLayers();
+    const index = layers.indexOf(element);
+
+    if (index < 0 || index === layers.length - 1) {
+      return;
+    }
+
+    layers.splice(index, 1);
+    layers.push(element);
+    this.setLayerOrder(layers);
+  }
+
+  getLayers() {
+    return Array.from(this.button.children).filter(element => (
+      element.classList.contains("editor-layer")
+    ));
+  }
+
+  getSelectedLayer() {
+    return this.selectedLayer;
+  }
+
+  selectLayer(element) {
+    const nextLayer = this.isLayer(element) ? element : null;
+
+    if (this.selectedLayer === nextLayer) {
+      return;
+    }
+
+    this.selectedLayer = nextLayer;
+    this.notifySelectionChanged();
+  }
+
+  setLayerVisibility(element, visible) {
+    if (!this.isLayer(element)) {
+      return;
+    }
+
+    element.hidden = !visible;
+    this.notifyLayersChanged();
+  }
+
+  moveLayer(element, direction) {
+    const layers = this.getLayers();
+    const index = layers.indexOf(element);
+    const nextIndex = Math.max(
+      0,
+      Math.min(layers.length - 1, index + direction)
+    );
+
+    if (index < 0 || nextIndex === index) {
+      return;
+    }
+
+    layers.splice(index, 1);
+    layers.splice(nextIndex, 0, element);
+    this.setLayerOrder(layers);
+  }
+
+  setLayerOrder(layers) {
+    const currentLayers = this.getLayers();
+
+    if (
+      layers.length !== currentLayers.length ||
+      new Set(layers).size !== currentLayers.length ||
+      layers.some(layer => !currentLayers.includes(layer))
+    ) {
+      return;
+    }
+
+    for (const layer of layers) {
+      this.button.appendChild(layer);
+    }
+
+    this.normalizeLayerOrder();
+    this.notifyLayersChanged();
+  }
+
+  normalizeLayerOrder() {
+    const layers = this.getLayers();
+
+    layers.forEach((layer, index) => {
+      layer.style.zIndex = String(index + 1);
+    });
+    this.zIndex = layers.length;
+  }
+
+  isLayer(element) {
+    return Boolean(
+      element &&
+      element.parentElement === this.button &&
+      element.classList.contains("editor-layer")
+    );
+  }
+
+  runLayerCleanups(element) {
+    const cleanups = this.layerCleanups.get(element);
+
+    if (!cleanups) {
+      return;
+    }
+
+    for (const cleanup of cleanups) {
+      cleanup();
+    }
+    this.layerCleanups.delete(element);
+  }
+
+  onLayersChanged(handler) {
+    this.layersChangedHandlers.add(handler);
+    return () => this.layersChangedHandlers.delete(handler);
+  }
+
+  onSelectionChanged(handler) {
+    this.selectionChangedHandlers.add(handler);
+    return () => this.selectionChangedHandlers.delete(handler);
+  }
+
+  notifyLayersChanged() {
+    for (const handler of this.layersChangedHandlers) {
+      handler(this.getLayers());
+    }
+  }
+
+  notifySelectionChanged() {
+    for (const handler of this.selectionChangedHandlers) {
+      handler(this.selectedLayer);
+    }
   }
 
   setPreviewScale(scale) {
@@ -117,6 +276,7 @@ export class Editor {
 
     this.clearLayers();
     this.zIndex = 0;
+    this.layerSequence = 0;
     this.button.removeAttribute("style");
 
     for (const handler of this.resetHandlers) {

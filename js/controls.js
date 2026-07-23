@@ -1,6 +1,17 @@
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
 
 const DEFAULT_PREVIEW_TEXT = "Sphynx of black quartz, judge my vow";
+const BUTTON_EFFECTS = new Set(["none", "glitch", "shimmer", "rotate"]);
+const TEXT_EFFECTS = new Set(["none", "bounce", "glow", "fly-in"]);
+const PROJECT_CONTROL_IDS = [
+  "background_color",
+  "border_color",
+  "border_width",
+  "border_style",
+  "background_size",
+  "background_gradient",
+  "button_effect"
+];
 
 export class ControlsController {
   constructor({ editor, media }) {
@@ -8,20 +19,19 @@ export class ControlsController {
     this.media = media;
     this.tabButtons = document.querySelectorAll(".menu-tab");
     this.panels = document.querySelectorAll(".menu[data-panel]");
-    this.tutorials = document.querySelectorAll(
-      "#tutorials img[data-tutorial]"
-    );
     this.backgroundColor = document.getElementById("background_color");
     this.backgroundDefault = document.getElementById(
       "background_default"
     );
+    this.buttonEffect = document.getElementById("button_effect");
     this.baseControls = [
       this.backgroundColor,
       document.getElementById("border_color"),
       document.getElementById("border_width"),
       document.getElementById("border_style"),
       document.getElementById("background_size"),
-      document.getElementById("background_gradient")
+      document.getElementById("background_gradient"),
+      this.buttonEffect
     ];
     this.textForm = document.querySelector("section.text form");
     this.textControls = this.textForm.querySelectorAll(
@@ -133,8 +143,7 @@ export class ControlsController {
         this.editor.button.style.background = control.value;
         break;
       case "background_gradient":
-        this.media.clearBackgroundImage();
-        this.editor.button.style.background = control.value;
+        this.applyBackgroundValue(control.value, control);
         break;
       case "background_size":
         this.editor.button.style.backgroundSize = control.value;
@@ -148,6 +157,9 @@ export class ControlsController {
       case "border_style":
         this.editor.button.style.borderStyle = control.value;
         break;
+      case "button_effect":
+        this.applyButtonEffect(control.value);
+        break;
       default:
         break;
     }
@@ -159,17 +171,68 @@ export class ControlsController {
     this.editor.button.style.background = this.backgroundColor.value;
   }
 
+  applyButtonEffect(effect) {
+    const safeEffect = BUTTON_EFFECTS.has(effect) ? effect : "none";
+
+    for (const name of BUTTON_EFFECTS) {
+      if (name !== "none") {
+        this.editor.button.classList.remove(`button-effect-${name}`);
+      }
+    }
+
+    this.editor.button.dataset.buttonEffect = safeEffect;
+    if (safeEffect !== "none") {
+      this.editor.button.classList.add(`button-effect-${safeEffect}`);
+    }
+  }
+
+  applyBackgroundValue(value, input = null) {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      this.media.clearBackgroundImage();
+      this.editor.button.style.background = "";
+      input?.setCustomValidity("");
+      return true;
+    }
+
+    const style = document.createElement("div").style;
+
+    if (/(?:^|;)\s*background\s*:/i.test(trimmedValue)) {
+      style.cssText = trimmedValue;
+    } else {
+      style.background = trimmedValue;
+    }
+
+    const background = style.background;
+
+    if (!background) {
+      input?.setCustomValidity(
+        "Enter a background value or CSS background declarations."
+      );
+      return false;
+    }
+
+    input?.setCustomValidity("");
+    this.media.clearBackgroundImage();
+    this.editor.button.style.background = background;
+    return true;
+  }
+
   applyBaseDefaults() {
     this.applyBorderWidth();
     this.editor.button.style.borderColor =
       document.getElementById("border_color").value;
     this.editor.button.style.borderStyle =
       document.getElementById("border_style").value;
-    this.editor.button.style.background =
-      document.getElementById("background_gradient").value ||
-      this.backgroundColor.value;
+    const gradient = document.getElementById("background_gradient");
+
+    if (!this.applyBackgroundValue(gradient.value, gradient)) {
+      this.editor.button.style.background = this.backgroundColor.value;
+    }
     this.editor.button.style.backgroundSize =
       document.getElementById("background_size").value;
+    this.applyButtonEffect(this.buttonEffect.value);
   }
 
   applyBorderWidth() {
@@ -191,10 +254,7 @@ export class ControlsController {
     const text = document.createElement("div");
     text.classList.add("text-layer");
     this.applyTextAttributes(text, this.getTextProperties());
-    this.editor.addLayer(text, {
-      type: "text",
-      animationClass: "glow_text"
-    });
+    this.editor.addLayer(text, { type: "text" });
   }
 
   previewFont() {
@@ -213,7 +273,8 @@ export class ControlsController {
       weight: document.getElementById("font_weight").value,
       size: `${document.getElementById("font_size").value}pt`,
       color: document.getElementById("font_color").value,
-      align: document.getElementById("text_align").value
+      align: document.getElementById("text_align").value,
+      effect: document.getElementById("text_effect").value
     };
   }
 
@@ -225,7 +286,115 @@ export class ControlsController {
     text.style.textAlign = properties.align;
     text.style.textDecoration = properties.decoration;
     text.style.color = properties.color;
+    this.applyTextEffect(text, properties.effect);
     text.textContent = properties.content || DEFAULT_PREVIEW_TEXT;
+  }
+
+  applyTextEffect(text, effect) {
+    const safeEffect = TEXT_EFFECTS.has(effect) ? effect : "none";
+
+    for (const name of TEXT_EFFECTS) {
+      if (name !== "none") {
+        text.classList.remove(`text-effect-${name}`);
+      }
+    }
+
+    text.dataset.textEffect = safeEffect;
+    if (safeEffect !== "none") {
+      text.classList.add(`text-effect-${safeEffect}`);
+    }
+  }
+
+  getProjectState() {
+    const controls = {};
+
+    for (const id of PROJECT_CONTROL_IDS) {
+      controls[id] = document.getElementById(id).value;
+    }
+
+    return {
+      controls,
+      background: this.media.getBackgroundFile()
+        ? null
+        : this.editor.button.style.background,
+      position: {
+        left: this.readPosition(this.editor.button.style.left),
+        top: this.readPosition(this.editor.button.style.top)
+      }
+    };
+  }
+
+  applyProjectState(state) {
+    const values = state?.controls || {};
+
+    for (const id of PROJECT_CONTROL_IDS) {
+      const control = document.getElementById(id);
+      const value = values[id];
+
+      if (typeof value !== "string") {
+        continue;
+      }
+
+      if (
+        control instanceof HTMLSelectElement &&
+        !Array.from(control.options).some(option => option.value === value)
+      ) {
+        continue;
+      }
+
+      if (
+        control.type === "color" &&
+        !/^#[0-9a-f]{6}$/i.test(value)
+      ) {
+        continue;
+      }
+
+      if (control.type === "number") {
+        const numericValue = Number(value);
+        const minimum = Number(control.min);
+        const maximum = Number(control.max);
+
+        if (!Number.isFinite(numericValue)) {
+          continue;
+        }
+
+        control.value = String(Math.min(
+          Number.isFinite(maximum) ? maximum : numericValue,
+          Math.max(
+            Number.isFinite(minimum) ? minimum : numericValue,
+            numericValue
+          )
+        ));
+      } else {
+        control.value = value;
+      }
+    }
+
+    this.applyBorderWidth();
+    this.editor.button.style.borderColor =
+      document.getElementById("border_color").value;
+    this.editor.button.style.borderStyle =
+      document.getElementById("border_style").value;
+    this.editor.button.style.backgroundSize =
+      document.getElementById("background_size").value;
+    this.applyButtonEffect(this.buttonEffect.value);
+
+    if (typeof state?.background === "string") {
+      this.applyBackgroundValue(
+        state.background,
+        document.getElementById("background_gradient")
+      );
+    }
+
+    const left = Number(state?.position?.left);
+    const top = Number(state?.position?.top);
+    this.editor.button.style.left = `${Number.isFinite(left) ? left : 0}px`;
+    this.editor.button.style.top = `${Number.isFinite(top) ? top : 0}px`;
+  }
+
+  readPosition(value) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   activateTab(name) {
@@ -242,10 +411,6 @@ export class ControlsController {
       panel.setAttribute("aria-hidden", String(!isActive));
     }
 
-    for (const tutorial of this.tutorials) {
-      const isActive = tutorial.dataset.tutorial === name;
-      tutorial.classList.toggle("visible", isActive);
-    }
   }
 
   reset() {
