@@ -112,6 +112,8 @@ export class MediaController {
       document.body.appendChild(probe);
       this.editor.button.style.background = `url("${url}")`;
       this.editor.button.style.backgroundSize = this.backgroundSize.value;
+      this.editor.button.style.backgroundRepeat =
+        this.backgroundSize.value === "contain" ? "repeat" : "no-repeat";
       return true;
     } catch {
       this.releasePendingUrl(url);

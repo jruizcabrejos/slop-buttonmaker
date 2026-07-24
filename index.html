@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1"
     >
-    <title>88x31 Web Button Maker</title>
+    <title>88x31 Builder | Web Badge &amp; Button Generator</title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" type="text/css" href="font/stylesheet.css">
     <link rel="icon" type="image/png" href="favicon.png">
@@ -144,6 +144,14 @@
             >
             <button
               type="button"
+              id="background_transparent"
+              class="transparent-color-button"
+              aria-label="Use a transparent background"
+              aria-pressed="false"
+              title="Transparent"
+            ></button>
+            <button
+              type="button"
               id="background_default"
               title="Restore classic 88x31 gray"
             >
@@ -190,12 +198,14 @@
               accept="image/png,image/gif,image/jpeg,image/webp,image/svg+xml,.png,.gif,.jpg,.jpeg,.webp,.svg"
               id="background_image"
             >
-          </li>
-          <li>
-            <label for="background_size">Background image size:</label>
-            <select name="background-size" id="background_size">
-              <option value="100% 100%">stretch</option>
-              <option value="contain" selected>tiling</option>
+            <select
+              name="background-size"
+              id="background_size"
+              aria-label="Background image size"
+              title="Background image size"
+            >
+              <option value="100% 100%">Stretch</option>
+              <option value="contain" selected>Tiling</option>
             </select>
           </li>
           <li>
@@ -222,7 +232,8 @@
             <label for="button_effect">Button effect:</label>
             <select id="button_effect">
               <option value="none" selected>None</option>
-              <option value="glitch">Glitch</option>
+              <option value="glitch">Tremble</option>
+              <option value="distortion">Distortion</option>
               <option value="shimmer">Shimmer</option>
               <option value="rotate">Rotate</option>
             </select>
@@ -309,10 +320,18 @@
             <textarea id="text_content" rows="2" required></textarea>
           </label>
           <div class="form-row control-pair">
-            <label for="font_color">
-              Text color:
+            <span class="inline-control-group">
+              <label for="font_color">Text color:</label>
               <input type="color" id="font_color" value="#000000">
-            </label>
+              <button
+                type="button"
+                id="font_transparent"
+                class="transparent-color-button"
+                aria-label="Use transparent text"
+                aria-pressed="false"
+                title="Transparent"
+              ></button>
+            </span>
             <label for="font_size">
               Font size:
               <input type="number" id="font_size" value="10" min="1">
@@ -380,19 +399,57 @@
               </select>
             </label>
           </div>
-          <label for="text_effect">
-            Text effect:
-            <select id="text_effect">
-              <option value="none" selected>None</option>
-              <option value="bounce">Bounce</option>
-              <option value="glow">Glow</option>
-              <option value="fly-in">Fly in</option>
-            </select>
-          </label>
+          <div class="form-row text-effect-row">
+            <label for="text_effect">
+              Text effect:
+              <select id="text_effect">
+                <option value="none" selected>None</option>
+                <option value="bounce">Bounce</option>
+                <option value="glow">Glow</option>
+                <option value="fly-in">Fly In</option>
+                <option value="blink">Blink</option>
+                <option value="letter-sweep">Letter Sweep</option>
+                <option value="wave">Text Wave</option>
+              </select>
+            </label>
+            <span id="text_motion_options" class="effect-options hidden">
+              <select
+                id="text_effect_direction"
+                aria-label="Text movement direction"
+                title="Direction"
+              >
+                <option value="left-to-right" selected>Left to right</option>
+                <option value="right-to-left">Right to left</option>
+              </select>
+              <select
+                id="text_effect_speed"
+                aria-label="Text effect speed"
+                title="Speed"
+              >
+                <option value="slow">Slow</option>
+                <option value="normal" selected>Normal</option>
+                <option value="fast">Fast</option>
+              </select>
+            </span>
+            <label
+              id="text_color_effect_options"
+              class="effect-options hidden"
+              for="text_effect_color"
+            >
+              Color 2:
+              <input
+                type="color"
+                id="text_effect_color"
+                value="#ffffff"
+              >
+            </label>
+          </div>
           <p id="font_preview">
-            Preview:
-            <span class="message">
-              Sphynx of black quartz, judge my vow
+            <span class="font-preview-label">Preview:</span>
+            <span class="font-preview-window">
+              <span class="message">
+                Sphynx of black quartz, judge my vow
+              </span>
             </span>
           </p>
           <button type="submit" id="submit_text">Submit!</button>
@@ -411,7 +468,8 @@
           <h4>Fancy Details</h4>
         </div>
         <p class="asset-import-instructions">
-          (1) Click Choose Files (2) Select assets (GIF, PNG, ZIP...)
+          1.- Click 'Choose Files' 2.- Select assets
+          (.gif, .png, .zip, ...)
         </p>
         <div class="asset-import-row">
           <label for="local_asset_input">Local assets:</label>
@@ -547,15 +605,6 @@
             </select>
           </li>
           <li class="gif-export-row hidden">
-            <label for="gif_duration">GIF duration:</label>
-            <select id="gif_duration">
-              <option value="1">1 second</option>
-              <option value="2" selected>2 seconds</option>
-              <option value="3">3 seconds</option>
-              <option value="5">5 seconds</option>
-            </select>
-          </li>
-          <li class="gif-export-row hidden">
             <label for="gif_frame_rate">GIF frame rate:</label>
             <select id="gif_frame_rate">
               <option value="5">5 FPS</option>
@@ -563,12 +612,36 @@
               <option value="15">15 FPS</option>
             </select>
           </li>
-          <li class="gif-export-row hidden">
-            <label for="gif_loop">GIF loop:</label>
-            <select id="gif_loop">
-              <option value="0" selected>Forever</option>
-              <option value="-1">Once</option>
-            </select>
+          <li class="gif-export-row gif-timing-row control-pair hidden">
+            <span class="gif-loop-controls">
+              <label for="gif_loop">
+                GIF loop:
+                <select id="gif_loop">
+                  <option value="0" selected>Forever</option>
+                  <option value="-1">Once</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <input
+                type="number"
+                id="gif_loop_count"
+                class="hidden"
+                value="2"
+                min="2"
+                max="100"
+                aria-label="Custom loop count"
+                title="Custom loop count"
+              >
+            </span>
+            <label for="gif_duration">
+              GIF duration:
+              <select id="gif_duration">
+                <option value="1">1 second</option>
+                <option value="2" selected>2 seconds</option>
+                <option value="3">3 seconds</option>
+                <option value="5">5 seconds</option>
+              </select>
+            </label>
           </li>
           <li class="raw-project-row">
             <button type="button" id="export_raw">Export raw</button>
@@ -579,6 +652,12 @@
               accept="application/json,.json"
               hidden
             >
+          </li>
+          <li>
+            <label for="border_layer_enabled">
+              Border in Layers:
+            </label>
+            <input type="checkbox" id="border_layer_enabled">
           </li>
         </ul>
       </section>
@@ -599,6 +678,7 @@
           rel="noopener"
         >here</a>!
       </li>
+      <li>Double clicking removes an asset.</li>
     </ol>
 
     <p>
@@ -653,6 +733,21 @@
           width="88"
           height="31"
           alt="Hekate button maker"
+        >
+      </a>
+    </div>
+    <p>Made by:</p>
+    <div class="maker-button">
+      <a
+        href="https://jruizcabrejos.com/"
+        target="_blank"
+        rel="noopener"
+      >
+        <img
+          src="graphics/credits/forgemarch.gif"
+          width="88"
+          height="31"
+          alt="ForgeMarch"
         >
       </a>
     </div>

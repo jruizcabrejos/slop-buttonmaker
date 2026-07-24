@@ -27,6 +27,14 @@ export class Editor {
     this.effectOverlay.classList.add("button-effect-overlay");
     this.effectOverlay.setAttribute("aria-hidden", "true");
     this.button.appendChild(this.effectOverlay);
+
+    this.borderLayer = document.createElement("div");
+    this.borderLayer.classList.add("button-border-layer");
+    this.borderLayer.dataset.layerId = "border-layer";
+    this.borderLayer.dataset.layerType = "border";
+    this.borderLayer.setAttribute("aria-hidden", "true");
+    this.button.appendChild(this.borderLayer);
+    this.borderLayerEnabled = false;
     this.previewVisual.appendChild(this.button);
   }
 
@@ -82,7 +90,7 @@ export class Editor {
   }
 
   removeLayer(element) {
-    if (!this.isLayer(element)) {
+    if (!this.isLayer(element) || this.isBorderLayer(element)) {
       return;
     }
 
@@ -107,12 +115,17 @@ export class Editor {
     const hadSelection = Boolean(this.selectedLayer);
 
     for (const layer of this.getLayers()) {
+      if (this.isBorderLayer(layer)) {
+        continue;
+      }
+
       this.runLayerCleanups(layer);
       layer.remove();
     }
 
     this.selectedLayer = null;
     this.zIndex = 0;
+    this.setBorderLayerEnabled(false);
     this.notifyLayersChanged();
 
     if (hadSelection) {
@@ -141,6 +154,42 @@ export class Editor {
 
   getSelectedLayer() {
     return this.selectedLayer;
+  }
+
+  isBorderLayer(element) {
+    return element === this.borderLayer;
+  }
+
+  isBorderLayerEnabled() {
+    return this.borderLayerEnabled;
+  }
+
+  setBorderLayerEnabled(enabled) {
+    const nextEnabled = Boolean(enabled);
+
+    if (this.borderLayerEnabled === nextEnabled) {
+      return;
+    }
+
+    this.borderLayerEnabled = nextEnabled;
+
+    if (nextEnabled) {
+      this.borderLayer.classList.add("editor-layer");
+      this.effectOverlay.after(this.borderLayer);
+    } else {
+      if (this.selectedLayer === this.borderLayer) {
+        this.selectedLayer = null;
+        this.notifySelectionChanged();
+      }
+
+      this.borderLayer.classList.remove("editor-layer");
+      this.borderLayer.hidden = false;
+      this.borderLayer.style.zIndex = "0";
+      this.effectOverlay.after(this.borderLayer);
+    }
+
+    this.normalizeLayerOrder();
+    this.notifyLayersChanged();
   }
 
   selectLayer(element) {

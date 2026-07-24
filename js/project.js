@@ -27,7 +27,11 @@ const LAYER_DATA_PROPERTIES = [
   "cropTop",
   "cropRight",
   "cropBottom",
-  "textEffect"
+  "textEffect",
+  "textEffectColor",
+  "textEffectDirection",
+  "textEffectSpeed",
+  "textPrimaryColor"
 ];
 
 export class ProjectController {
@@ -135,6 +139,16 @@ export class ProjectController {
   }
 
   async serializeLayer(layer) {
+    if (this.editor.isBorderLayer(layer)) {
+      return {
+        kind: "border",
+        type: "border",
+        hidden: layer.hidden,
+        style: {},
+        data: {}
+      };
+    }
+
     const isImage = layer instanceof HTMLImageElement;
     const record = {
       kind: isImage ? "image" : "text",
@@ -189,6 +203,7 @@ export class ProjectController {
       ? await this.deserializeFile(project.backgroundFile)
       : null;
     const preparedLayers = [];
+    const restoredLayers = [];
 
     for (const record of project.layers) {
       preparedLayers.push({
@@ -213,19 +228,25 @@ export class ProjectController {
     }
 
     for (const prepared of preparedLayers) {
-      await this.restoreLayer(prepared.record, prepared.file);
+      restoredLayers.push(
+        await this.restoreLayer(prepared.record, prepared.file)
+      );
     }
 
-    const layers = this.editor.getLayers();
-    this.editor.setLayerOrder(layers);
+    this.editor.setLayerOrder(restoredLayers);
     this.editor.selectLayer(null);
-    this.editor.selectLayer(layers[layers.length - 1] || null);
+    this.editor.selectLayer(
+      restoredLayers[restoredLayers.length - 1] || null
+    );
   }
 
   async restoreLayer(record, file) {
     let layer;
 
-    if (record.kind === "image") {
+    if (record.kind === "border") {
+      this.editor.setBorderLayerEnabled(true);
+      layer = this.editor.borderLayer;
+    } else if (record.kind === "image") {
       layer = await this.media.addImageFile(
         file,
         null,
@@ -256,8 +277,16 @@ export class ProjectController {
     layer.hidden = Boolean(record.hidden);
 
     if (record.kind === "text") {
-      this.controls.applyTextEffect(layer, record.data.textEffect);
+      this.controls.applyTextEffect(layer, record.data.textEffect, {
+        color: record.data.textEffectColor,
+        direction: record.data.textEffectDirection,
+        primaryColor:
+          record.data.textPrimaryColor || layer.style.color,
+        speed: record.data.textEffectSpeed
+      });
     }
+
+    return layer;
   }
 
   validateProject(project) {
@@ -275,10 +304,12 @@ export class ProjectController {
       this.validateFileRecord(project.backgroundFile);
     }
 
+    let borderCount = 0;
+
     for (const layer of project.layers) {
       if (
         !layer ||
-        !["image", "text"].includes(layer.kind) ||
+        !["border", "image", "text"].includes(layer.kind) ||
         !layer.style ||
         !layer.data ||
         typeof layer.style !== "object" ||
@@ -287,7 +318,13 @@ export class ProjectController {
         throw new Error("Invalid layer record.");
       }
 
-      if (layer.kind === "image") {
+      if (layer.kind === "border") {
+        borderCount += 1;
+
+        if (borderCount > 1) {
+          throw new Error("Invalid border layer.");
+        }
+      } else if (layer.kind === "image") {
         this.validateFileRecord(layer.file);
       } else if (
         typeof layer.text !== "string" ||

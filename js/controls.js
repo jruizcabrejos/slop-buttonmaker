@@ -1,8 +1,27 @@
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
 
 const DEFAULT_PREVIEW_TEXT = "Sphynx of black quartz, judge my vow";
-const BUTTON_EFFECTS = new Set(["none", "glitch", "shimmer", "rotate"]);
-const TEXT_EFFECTS = new Set(["none", "bounce", "glow", "fly-in"]);
+const BUTTON_EFFECTS = new Set([
+  "none",
+  "glitch",
+  "distortion",
+  "shimmer",
+  "rotate"
+]);
+const TEXT_EFFECTS = new Set([
+  "none",
+  "bounce",
+  "glow",
+  "fly-in",
+  "blink",
+  "letter-sweep",
+  "wave"
+]);
+const TEXT_EFFECT_DURATIONS = {
+  slow: 2000,
+  normal: 1200,
+  fast: 600
+};
 const PROJECT_CONTROL_IDS = [
   "background_color",
   "border_color",
@@ -23,7 +42,18 @@ export class ControlsController {
     this.backgroundDefault = document.getElementById(
       "background_default"
     );
+    this.backgroundTransparent = document.getElementById(
+      "background_transparent"
+    );
+    this.fontTransparent = document.getElementById("font_transparent");
     this.buttonEffect = document.getElementById("button_effect");
+    this.textEffect = document.getElementById("text_effect");
+    this.textMotionOptions = document.getElementById(
+      "text_motion_options"
+    );
+    this.textColorEffectOptions = document.getElementById(
+      "text_color_effect_options"
+    );
     this.baseControls = [
       this.backgroundColor,
       document.getElementById("border_color"),
@@ -44,6 +74,12 @@ export class ControlsController {
     this.handleTabKeydown = this.handleTabKeydown.bind(this);
     this.applyDefaultBackground =
       this.applyDefaultBackground.bind(this);
+    this.toggleBackgroundTransparency =
+      this.toggleBackgroundTransparency.bind(this);
+    this.toggleFontTransparency =
+      this.toggleFontTransparency.bind(this);
+    this.syncTextEffectOptions =
+      this.syncTextEffectOptions.bind(this);
     this.previewFont = this.previewFont.bind(this);
     this.drawText = this.drawText.bind(this);
 
@@ -55,7 +91,29 @@ export class ControlsController {
       "click",
       this.applyDefaultBackground
     );
+    this.backgroundTransparent.addEventListener(
+      "click",
+      this.toggleBackgroundTransparency
+    );
+    this.fontTransparent.addEventListener(
+      "click",
+      this.toggleFontTransparency
+    );
+    this.textEffect.addEventListener(
+      "change",
+      this.syncTextEffectOptions
+    );
+    this.backgroundColor.addEventListener("input", () => {
+      this.setTransparentState(this.backgroundTransparent, false);
+    });
+    document.getElementById("font_color").addEventListener("input", () => {
+      this.setTransparentState(this.fontTransparent, false);
+    });
+    this.media.backgroundInput.addEventListener("change", () => {
+      this.setTransparentState(this.backgroundTransparent, false);
+    });
     this.applyBaseDefaults();
+    this.syncTextEffectOptions();
     this.previewFont();
     this.activateTab("base");
 
@@ -141,21 +199,25 @@ export class ControlsController {
       case "background_color":
         this.media.clearBackgroundImage();
         this.editor.button.style.background = control.value;
+        this.applyBackgroundSizing();
         break;
       case "background_gradient":
-        this.applyBackgroundValue(control.value, control);
+        if (this.applyBackgroundValue(control.value, control)) {
+          this.setTransparentState(this.backgroundTransparent, false);
+          this.applyBackgroundSizing();
+        }
         break;
       case "background_size":
-        this.editor.button.style.backgroundSize = control.value;
+        this.applyBackgroundSizing();
         break;
       case "border_width":
-        this.applyBorderWidth();
+        this.applyBorderAppearance();
         break;
       case "border_color":
-        this.editor.button.style.borderColor = control.value;
+        this.applyBorderAppearance();
         break;
       case "border_style":
-        this.editor.button.style.borderStyle = control.value;
+        this.applyBorderAppearance();
         break;
       case "button_effect":
         this.applyButtonEffect(control.value);
@@ -167,8 +229,35 @@ export class ControlsController {
 
   applyDefaultBackground() {
     this.backgroundColor.value = this.backgroundColor.defaultValue;
+    this.setTransparentState(this.backgroundTransparent, false);
     this.media.clearBackgroundImage();
     this.editor.button.style.background = this.backgroundColor.value;
+    this.applyBackgroundSizing();
+  }
+
+  toggleBackgroundTransparency() {
+    const active = !this.isTransparent(this.backgroundTransparent);
+    this.setTransparentState(this.backgroundTransparent, active);
+    this.media.clearBackgroundImage();
+    this.editor.button.style.background = active
+      ? "transparent"
+      : this.backgroundColor.value;
+    this.applyBackgroundSizing();
+  }
+
+  toggleFontTransparency() {
+    const active = !this.isTransparent(this.fontTransparent);
+    this.setTransparentState(this.fontTransparent, active);
+    this.previewFont();
+  }
+
+  setTransparentState(button, active) {
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+
+  isTransparent(button) {
+    return button.getAttribute("aria-pressed") === "true";
   }
 
   applyButtonEffect(effect) {
@@ -220,32 +309,52 @@ export class ControlsController {
   }
 
   applyBaseDefaults() {
-    this.applyBorderWidth();
-    this.editor.button.style.borderColor =
-      document.getElementById("border_color").value;
-    this.editor.button.style.borderStyle =
-      document.getElementById("border_style").value;
+    this.applyBorderAppearance();
     const gradient = document.getElementById("background_gradient");
 
     if (!this.applyBackgroundValue(gradient.value, gradient)) {
       this.editor.button.style.background = this.backgroundColor.value;
     }
-    this.editor.button.style.backgroundSize =
-      document.getElementById("background_size").value;
+    this.applyBackgroundSizing();
     this.applyButtonEffect(this.buttonEffect.value);
   }
 
-  applyBorderWidth() {
+  applyBackgroundSizing() {
+    const size = document.getElementById("background_size").value;
+    this.editor.button.style.backgroundSize = size;
+    this.editor.button.style.backgroundRepeat =
+      size === "contain" ? "repeat" : "no-repeat";
+  }
+
+  applyBorderAppearance() {
     const borderWidth = Number(
       document.getElementById("border_width").value
     );
-    const safeWidth = Number.isFinite(borderWidth) ? borderWidth : 0;
+    const safeWidth = Math.max(
+      0,
+      Math.min(15, Number.isFinite(borderWidth) ? borderWidth : 0)
+    );
+    const borderStyle = document.getElementById("border_style").value;
+    const borderColor = document.getElementById("border_color").value;
 
     this.editor.button.style.borderWidth = `${safeWidth}px`;
+    this.editor.button.style.borderStyle = borderStyle;
+    this.editor.button.style.borderColor = "transparent";
     this.editor.button.style.width =
       `${BUTTON_WIDTH - 2 * safeWidth}px`;
     this.editor.button.style.height =
       `${BUTTON_HEIGHT - 2 * safeWidth}px`;
+
+    Object.assign(this.editor.borderLayer.style, {
+      borderColor,
+      borderStyle,
+      borderWidth: `${safeWidth}px`,
+      boxSizing: "border-box",
+      height: `${BUTTON_HEIGHT}px`,
+      left: `${-safeWidth}px`,
+      top: `${-safeWidth}px`,
+      width: `${BUTTON_WIDTH}px`
+    });
   }
 
   drawText(event) {
@@ -272,9 +381,15 @@ export class ControlsController {
       style: document.getElementById("font_style").value,
       weight: document.getElementById("font_weight").value,
       size: `${document.getElementById("font_size").value}pt`,
-      color: document.getElementById("font_color").value,
+      color: this.isTransparent(this.fontTransparent)
+        ? "transparent"
+        : document.getElementById("font_color").value,
       align: document.getElementById("text_align").value,
-      effect: document.getElementById("text_effect").value
+      effect: this.textEffect.value,
+      effectColor: document.getElementById("text_effect_color").value,
+      effectDirection:
+        document.getElementById("text_effect_direction").value,
+      effectSpeed: document.getElementById("text_effect_speed").value
     };
   }
 
@@ -286,12 +401,27 @@ export class ControlsController {
     text.style.textAlign = properties.align;
     text.style.textDecoration = properties.decoration;
     text.style.color = properties.color;
-    this.applyTextEffect(text, properties.effect);
     text.textContent = properties.content || DEFAULT_PREVIEW_TEXT;
+    this.applyTextEffect(text, properties.effect, {
+      color: properties.effectColor,
+      direction: properties.effectDirection,
+      primaryColor: properties.color,
+      speed: properties.effectSpeed
+    });
   }
 
-  applyTextEffect(text, effect) {
+  applyTextEffect(text, effect, options = {}) {
     const safeEffect = TEXT_EFFECTS.has(effect) ? effect : "none";
+    const direction = options.direction === "right-to-left"
+      ? "right-to-left"
+      : "left-to-right";
+    const speed = Object.hasOwn(TEXT_EFFECT_DURATIONS, options.speed)
+      ? options.speed
+      : "normal";
+    const effectColor = /^#[0-9a-f]{6}$/i.test(options.color)
+      ? options.color
+      : "#ffffff";
+    const primaryColor = options.primaryColor || text.style.color || "#000";
 
     for (const name of TEXT_EFFECTS) {
       if (name !== "none") {
@@ -300,9 +430,58 @@ export class ControlsController {
     }
 
     text.dataset.textEffect = safeEffect;
+    text.dataset.textEffectColor = effectColor;
+    text.dataset.textEffectDirection = direction;
+    text.dataset.textEffectSpeed = speed;
+    text.dataset.textPrimaryColor = primaryColor;
+    text.style.setProperty("--text-effect-color", effectColor);
+    text.style.setProperty("--text-primary-color", primaryColor);
+    text.style.setProperty(
+      "--text-effect-duration",
+      `${TEXT_EFFECT_DURATIONS[speed]}ms`
+    );
+
     if (safeEffect !== "none") {
       text.classList.add(`text-effect-${safeEffect}`);
     }
+
+    if (["letter-sweep", "wave"].includes(safeEffect)) {
+      this.wrapTextLetters(text);
+    }
+  }
+
+  wrapTextLetters(text) {
+    const content = text.textContent;
+    const fragment = document.createDocumentFragment();
+    let letterIndex = 0;
+
+    Array.from(content).forEach(character => {
+      if (character === "\n") {
+        fragment.appendChild(document.createTextNode(character));
+        return;
+      }
+
+      const letter = document.createElement("span");
+      letter.className = "text-effect-letter";
+      letter.style.setProperty("--letter-index", String(letterIndex));
+      letter.textContent = character;
+      fragment.appendChild(letter);
+      letterIndex += 1;
+    });
+
+    text.replaceChildren(fragment);
+  }
+
+  syncTextEffectOptions() {
+    const effect = this.textEffect.value;
+    this.textMotionOptions.classList.toggle(
+      "hidden",
+      effect !== "fly-in"
+    );
+    this.textColorEffectOptions.classList.toggle(
+      "hidden",
+      !["blink", "letter-sweep"].includes(effect)
+    );
   }
 
   getProjectState() {
@@ -317,6 +496,8 @@ export class ControlsController {
       background: this.media.getBackgroundFile()
         ? null
         : this.editor.button.style.background,
+      backgroundTransparent:
+        this.isTransparent(this.backgroundTransparent),
       position: {
         left: this.readPosition(this.editor.button.style.left),
         top: this.readPosition(this.editor.button.style.top)
@@ -329,7 +510,11 @@ export class ControlsController {
 
     for (const id of PROJECT_CONTROL_IDS) {
       const control = document.getElementById(id);
-      const value = values[id];
+      const storedValue = values[id];
+      const value =
+        id === "background_size" && storedValue === "auto"
+          ? "contain"
+          : storedValue;
 
       if (typeof value !== "string") {
         continue;
@@ -370,13 +555,7 @@ export class ControlsController {
       }
     }
 
-    this.applyBorderWidth();
-    this.editor.button.style.borderColor =
-      document.getElementById("border_color").value;
-    this.editor.button.style.borderStyle =
-      document.getElementById("border_style").value;
-    this.editor.button.style.backgroundSize =
-      document.getElementById("background_size").value;
+    this.applyBorderAppearance();
     this.applyButtonEffect(this.buttonEffect.value);
 
     if (typeof state?.background === "string") {
@@ -384,6 +563,14 @@ export class ControlsController {
         state.background,
         document.getElementById("background_gradient")
       );
+    }
+    this.applyBackgroundSizing();
+    const transparent = Boolean(state?.backgroundTransparent);
+    this.setTransparentState(this.backgroundTransparent, transparent);
+
+    if (transparent) {
+      this.media.clearBackgroundImage();
+      this.editor.button.style.background = "transparent";
     }
 
     const left = Number(state?.position?.left);
@@ -419,7 +606,10 @@ export class ControlsController {
     }
 
     this.textForm.reset();
+    this.setTransparentState(this.backgroundTransparent, false);
+    this.setTransparentState(this.fontTransparent, false);
     this.applyBaseDefaults();
+    this.syncTextEffectOptions();
     this.previewFont();
     this.activateTab("base");
   }

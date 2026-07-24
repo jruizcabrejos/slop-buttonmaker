@@ -11,8 +11,17 @@ const SNAPSHOT_HEIGHT = BUTTON_HEIGHT * SMOOTH_RENDER_SCALE;
 const BOUNCE_DURATION = 800;
 const BOUNCE_DISTANCE = 4;
 const GLOW_DURATION = 1000;
-const FLY_IN_DURATION = 700;
-const BUTTON_EFFECT_DURATION = 1200;
+const TEXT_EFFECT_DURATIONS = {
+  slow: 2000,
+  normal: 1200,
+  fast: 600
+};
+const BUTTON_EFFECT_DURATIONS = {
+  glitch: 320,
+  distortion: 480,
+  shimmer: 1200,
+  rotate: 1200
+};
 
 export class ExportOptionsController {
   constructor({ editor }) {
@@ -21,22 +30,33 @@ export class ExportOptionsController {
     this.gifDuration = document.getElementById("gif_duration");
     this.gifFrameRate = document.getElementById("gif_frame_rate");
     this.gifLoop = document.getElementById("gif_loop");
+    this.gifLoopCount = document.getElementById("gif_loop_count");
     this.gifRows = document.querySelectorAll(".gif-export-row");
 
     this.syncGifRows = this.syncGifRows.bind(this);
+    this.syncGifLoopCount = this.syncGifLoopCount.bind(this);
     this.format.addEventListener("change", this.syncGifRows);
+    this.gifLoop.addEventListener("change", this.syncGifLoopCount);
     this.syncGifRows();
+    this.syncGifLoopCount();
 
     editor.onReset(() => this.reset());
   }
 
   getSettings() {
+    const repeat = this.gifLoop.value === "custom"
+      ? Math.max(
+        2,
+        Math.min(100, Number(this.gifLoopCount.value) || 2)
+      )
+      : Number(this.gifLoop.value);
+
     return {
       format: this.format.value,
       rendering: this.rendering.value,
       duration: Number(this.gifDuration.value),
       frameRate: Number(this.gifFrameRate.value),
-      repeat: Number(this.gifLoop.value)
+      repeat
     };
   }
 
@@ -46,6 +66,12 @@ export class ExportOptionsController {
     for (const row of this.gifRows) {
       row.classList.toggle("hidden", hidden);
     }
+  }
+
+  syncGifLoopCount() {
+    const custom = this.gifLoop.value === "custom";
+    this.gifLoopCount.classList.toggle("hidden", !custom);
+    this.gifLoopCount.disabled = !custom;
   }
 
   reset() {
@@ -62,7 +88,9 @@ export class ExportOptionsController {
       control.selectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
     }
 
+    this.gifLoopCount.value = this.gifLoopCount.defaultValue;
     this.syncGifRows();
+    this.syncGifLoopCount();
   }
 }
 
@@ -189,13 +217,16 @@ export class ExportController {
 
       const renderScale =
         rendering === "smooth" ? SMOOTH_RENDER_SCALE : 1;
-      const renderedCanvas = await window.html2canvas(exportHost.button, {
-        scale: renderScale,
-        width: BUTTON_WIDTH,
-        height: BUTTON_HEIGHT,
-        backgroundColor: null,
-        logging: false
-      });
+      const renderedCanvas = await window.html2canvas(
+        exportHost.renderRoot,
+        {
+          scale: renderScale,
+          width: BUTTON_WIDTH,
+          height: BUTTON_HEIGHT,
+          backgroundColor: null,
+          logging: false
+        }
+      );
 
       return this.normalizeCanvas(renderedCanvas, rendering);
     } finally {
@@ -244,15 +275,17 @@ export class ExportController {
     animationTime
   ) {
     const host = document.createElement("div");
+    const frame = document.createElement("div");
     const button = this.editor.button.cloneNode(true);
     const clonedImages = button.querySelectorAll("img");
 
     host.classList.add("export-host");
-    button.style.position = "relative";
+    frame.classList.add("export-frame");
+    button.style.position = "absolute";
     button.style.left = "0";
     button.style.top = "0";
     button.style.transform = "none";
-    button.style.overflow = "hidden";
+    button.style.overflow = "visible";
     button.style.imageRendering =
       rendering === "pixelated" ? "pixelated" : "auto";
     button.classList.remove("is-dragging");
@@ -283,14 +316,23 @@ export class ExportController {
 
     this.freezeTextEffects(button, animationTime);
     this.freezeButtonEffect(button, animationTime);
-    host.appendChild(button);
+    frame.appendChild(button);
+    host.appendChild(frame);
     document.body.appendChild(host);
-    return { host, button };
+    return { host, button, renderRoot: frame };
   }
 
   freezeTextEffects(button, animationTime) {
     for (const text of button.querySelectorAll("[data-text-effect]")) {
       const effect = text.dataset.textEffect;
+      const duration =
+        TEXT_EFFECT_DURATIONS[text.dataset.textEffectSpeed] ||
+        TEXT_EFFECT_DURATIONS.normal;
+      const time = Number.isFinite(animationTime) ? animationTime : 0;
+      const primaryColor =
+        text.dataset.textPrimaryColor || text.style.color || "#000";
+      const effectColor =
+        text.dataset.textEffectColor || "#fff";
       text.style.animation = "none";
 
       switch (effect) {
@@ -314,15 +356,58 @@ export class ExportController {
           break;
         }
         case "fly-in": {
-          const progress = Number.isFinite(animationTime)
-            ? Math.min(1, Math.max(0, animationTime / FLY_IN_DURATION))
-            : 1;
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const offset = -BUTTON_WIDTH * (1 - eased);
-          text.style.opacity = eased.toFixed(3);
+          const phase = Number.isFinite(animationTime)
+            ? (animationTime % duration) / duration
+            : 0.5;
+          const direction =
+            text.dataset.textEffectDirection === "right-to-left"
+              ? -1
+              : 1;
+          const offset =
+            direction * (-BUTTON_WIDTH + phase * BUTTON_WIDTH * 2);
           text.style.transform = `translateX(${offset.toFixed(3)}px)`;
           break;
         }
+        case "blink": {
+          const phase = Number.isFinite(animationTime)
+            ? (animationTime % duration) / duration
+            : 0.25;
+          text.style.color = phase < 0.5
+            ? primaryColor
+            : effectColor;
+          break;
+        }
+        case "letter-sweep":
+          for (const [index, letter] of Array.from(
+            text.querySelectorAll(".text-effect-letter")
+          ).entries()) {
+            const phase = this.modulo(
+              time - index * 70,
+              duration
+            ) / duration;
+            letter.style.animation = "none";
+            letter.style.color =
+              phase >= 0.35 && phase <= 0.68
+                ? effectColor
+                : primaryColor;
+          }
+          break;
+        case "wave":
+          for (const [index, letter] of Array.from(
+            text.querySelectorAll(".text-effect-letter")
+          ).entries()) {
+            const phase = this.modulo(
+              time + index * 80,
+              duration
+            ) / duration;
+            const offset =
+              -BOUNCE_DISTANCE *
+              (0.5 - 0.5 * Math.cos(phase * Math.PI * 2));
+            letter.style.animation = "none";
+            letter.style.transform =
+              `translateY(${offset.toFixed(3)}px)`;
+          }
+          break;
         default:
           break;
       }
@@ -332,9 +417,11 @@ export class ExportController {
   freezeButtonEffect(button, animationTime) {
     const effect = button.dataset.buttonEffect;
     const overlay = button.querySelector(".button-effect-overlay");
+    const duration =
+      BUTTON_EFFECT_DURATIONS[effect] ||
+      BUTTON_EFFECT_DURATIONS.rotate;
     const phase = Number.isFinite(animationTime)
-      ? (animationTime % BUTTON_EFFECT_DURATION) /
-        BUTTON_EFFECT_DURATION
+      ? (animationTime % duration) / duration
       : 0.25;
 
     button.style.animation = "none";
@@ -360,6 +447,19 @@ export class ExportController {
         }
         break;
       }
+      case "distortion":
+        button.style.transform = "none";
+        if (overlay) {
+          overlay.style.display = "block";
+          overlay.style.opacity = "0.72";
+          overlay.style.backgroundPosition =
+            `${(phase * 35).toFixed(2)}px 0, 0 ` +
+            `${phase >= 0.5 ? 1 : 0}px`;
+          overlay.style.clipPath = phase < 0.5
+            ? "polygon(0 0,100% 0,100% 28%,0 28%,0 55%,100% 55%,100% 72%,0 72%)"
+            : "polygon(0 12%,100% 12%,100% 42%,0 42%,0 67%,100% 67%,100% 96%,0 96%)";
+        }
+        break;
       case "shimmer":
         if (overlay) {
           overlay.style.display = "block";
@@ -370,7 +470,7 @@ export class ExportController {
       case "rotate": {
         const angle = Math.sin(phase * Math.PI * 2) * 2;
         button.style.transform =
-          `scale(0.9) rotate(${angle.toFixed(3)}deg)`;
+          `rotate(${angle.toFixed(3)}deg)`;
         break;
       }
       default:
@@ -462,6 +562,10 @@ export class ExportController {
   readNumber(value, fallback) {
     const parsed = Number.parseFloat(value);
     return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  modulo(value, divisor) {
+    return ((value % divisor) + divisor) % divisor;
   }
 
   normalizeCanvas(renderedCanvas, rendering) {

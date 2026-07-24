@@ -203,7 +203,11 @@ export class AssetLibraryController {
           lastModified: asset.addedAt
         }
       );
-      const image = await this.media.addImageFile(file);
+      const image = await this.media.addImageFile(
+        file,
+        null,
+        { type: "detail" }
+      );
 
       if (image) {
         this.status.textContent = `${asset.name} added.`;

@@ -5,6 +5,7 @@ export class LayersController {
     this.editor = editor;
     this.list = document.getElementById("layer_list");
     this.emptyState = document.getElementById("layers_empty");
+    this.borderToggle = document.getElementById("border_layer_enabled");
     this.draggedLayerId = null;
     this.dropTarget = null;
 
@@ -14,6 +15,7 @@ export class LayersController {
     this.handleDragOver = this.handleDragOver.bind(this);
     this.handleDrop = this.handleDrop.bind(this);
     this.handleDragEnd = this.handleDragEnd.bind(this);
+    this.toggleBorderLayer = this.toggleBorderLayer.bind(this);
 
     this.list.addEventListener("click", this.handleClick);
     this.list.addEventListener("change", this.handleChange);
@@ -21,15 +23,21 @@ export class LayersController {
     this.list.addEventListener("dragover", this.handleDragOver);
     this.list.addEventListener("drop", this.handleDrop);
     this.list.addEventListener("dragend", this.handleDragEnd);
+    this.borderToggle.addEventListener("change", this.toggleBorderLayer);
 
     this.editor.onLayersChanged(() => this.render());
     this.editor.onSelectionChanged(() => this.updateSelection());
+    this.editor.onReset(() => {
+      this.borderToggle.checked = false;
+    });
     this.render();
   }
 
   render() {
     const layers = this.editor.getLayers().slice().reverse();
     const fragment = document.createDocumentFragment();
+
+    this.borderToggle.checked = this.editor.isBorderLayerEnabled();
 
     layers.forEach((layer, index) => {
       fragment.appendChild(this.createRow(layer, index, layers.length));
@@ -54,6 +62,11 @@ export class LayersController {
       "Move layer down",
       "&#9660;"
     );
+    const remove = this.createOrderButton(
+      "remove",
+      "Delete layer",
+      "&#128465;"
+    );
 
     row.className = "layer-row";
     row.dataset.layerId = layer.dataset.layerId;
@@ -77,8 +90,17 @@ export class LayersController {
 
     raise.disabled = index === 0;
     lower.disabled = index === layerCount - 1;
+    remove.classList.add("layer-delete");
+    remove.disabled = this.editor.isBorderLayer(layer);
+    if (remove.disabled) {
+      remove.title = "The border cannot be deleted";
+      remove.setAttribute(
+        "aria-label",
+        "The border cannot be deleted"
+      );
+    }
 
-    row.append(visibility, label, raise, lower);
+    row.append(visibility, label, raise, lower, remove);
     return row;
   }
 
@@ -117,6 +139,9 @@ export class LayersController {
         break;
       case "select":
         this.editor.selectLayer(layer);
+        break;
+      case "remove":
+        this.editor.removeLayer(layer);
         break;
       default:
         break;
@@ -221,6 +246,10 @@ export class LayersController {
     this.clearDragState();
   }
 
+  toggleBorderLayer() {
+    this.editor.setBorderLayerEnabled(this.borderToggle.checked);
+  }
+
   clearDragState() {
     this.draggedLayerId = null;
     this.clearDropTarget();
@@ -268,6 +297,7 @@ export class LayersController {
     }
 
     const prefix = {
+      border: "Border",
       detail: "Asset",
       image: "Image",
       text: "Text"
