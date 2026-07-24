@@ -600,6 +600,13 @@ section.extra .detail-grid li {
   font-size: 10pt;
 }
 
+.asset-sources ul {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .asset-sources li {
   display: flex;
   min-height: 33px;
@@ -862,6 +869,7 @@ body > p {
   gap: 5px;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .inspiration-buttons img {
