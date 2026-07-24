@@ -1,1 +1,1 @@
-](https://jruizcabrejos.github.io/slop-buttonmaker/)
+https://jruizcabrejos.com/buttonmaker

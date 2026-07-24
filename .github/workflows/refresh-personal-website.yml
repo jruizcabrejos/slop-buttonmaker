@@ -1,0 +1,24 @@
+name: Refresh personal website
+
+on:
+  push:
+    branches:
+      - main-slop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    if: github.repository == 'jruizcabrejos/slop-buttonmaker'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger website deployment
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_SITE_DISPATCH_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            repos/jruizcabrejos/jruizcabrejos/dispatches \
+            -f event_type=buttonmaker-updated
