@@ -1,3 +1,5 @@
+import { MAX_SEQUENCE_SCENES } from "./sequence.js";
+
 const PROJECT_FORMAT = "slop-buttonmaker";
 const PROJECT_VERSION = 1;
 const MAX_PROJECT_SIZE = 150 * 1024 * 1024;
@@ -31,14 +33,16 @@ const LAYER_DATA_PROPERTIES = [
   "textEffectColor",
   "textEffectDirection",
   "textEffectSpeed",
-  "textPrimaryColor"
+  "textPrimaryColor",
+  "sequenceStep"
 ];
 
 export class ProjectController {
-  constructor({ editor, media, controls }) {
+  constructor({ editor, media, controls, sequence }) {
     this.editor = editor;
     this.media = media;
     this.controls = controls;
+    this.sequence = sequence;
     this.exportButton = document.getElementById("export_raw");
     this.importButton = document.getElementById("import_raw");
     this.importInput = document.getElementById("import_raw_file");
@@ -131,6 +135,7 @@ export class ProjectController {
       version: PROJECT_VERSION,
       exportedAt: new Date().toISOString(),
       button: this.controls.getProjectState(),
+      sequence: this.sequence.getProjectState(),
       backgroundFile: await this.serializeFile(
         this.media.getBackgroundFile()
       ),
@@ -216,6 +221,7 @@ export class ProjectController {
 
     this.editor.reset();
     this.controls.applyProjectState(project.button);
+    this.sequence.applyProjectState(project.sequence);
 
     if (backgroundFile) {
       const backgroundLoaded = await this.media.addBackgroundFile(
@@ -304,6 +310,17 @@ export class ProjectController {
       this.validateFileRecord(project.backgroundFile);
     }
 
+    if (
+      project.sequence !== undefined &&
+      (
+        !project.sequence ||
+        typeof project.sequence !== "object" ||
+        typeof project.sequence.duration !== "string"
+      )
+    ) {
+      throw new Error("Invalid sequence settings.");
+    }
+
     let borderCount = 0;
 
     for (const layer of project.layers) {
@@ -331,6 +348,18 @@ export class ProjectController {
         layer.text.length > MAX_TEXT_LENGTH
       ) {
         throw new Error("Invalid text layer.");
+      }
+
+      if (
+        layer.data.sequenceStep !== undefined &&
+        (
+          typeof layer.data.sequenceStep !== "string" ||
+          Number(layer.data.sequenceStep) < 1 ||
+          Number(layer.data.sequenceStep) > MAX_SEQUENCE_SCENES ||
+          !Number.isInteger(Number(layer.data.sequenceStep))
+        )
+      ) {
+        throw new Error("Invalid layer scene.");
       }
     }
   }

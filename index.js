@@ -9,6 +9,7 @@ import {
 } from "./js/export.js";
 import { MediaController } from "./js/media.js";
 import { ProjectController } from "./js/project.js";
+import { SequenceController } from "./js/sequence.js";
 import { initAddons } from "./js/addons/index.js";
 
 function init() {
@@ -23,8 +24,9 @@ function init() {
   new LayersController({ editor });
   const drag = new DragController({ editor });
   const exportOptions = new ExportOptionsController({ editor });
+  const sequence = new SequenceController({ editor });
   new ExportController({ editor, media, options: exportOptions });
-  new ProjectController({ editor, media, controls });
+  new ProjectController({ editor, media, controls, sequence });
   initAddons({ editor });
 
   editor.onBeforeReset(() => drag.cancel());

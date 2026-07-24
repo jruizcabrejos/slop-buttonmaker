@@ -1,3 +1,5 @@
+import { readSequenceStep } from "./sequence.js";
+
 const LABEL_LIMIT = 24;
 
 export class LayersController {
@@ -303,9 +305,13 @@ export class LayersController {
       text: "Text"
     }[type] || "Layer";
     const label = name ? `${prefix}: ${name}` : prefix;
-
-    return label.length > LABEL_LIMIT
-      ? `${label.slice(0, LABEL_LIMIT - 3)}...`
+    const step = readSequenceStep(layer);
+    const scenePrefix = step === null ? "" : `[S${step}] `;
+    const contentLimit = LABEL_LIMIT - scenePrefix.length;
+    const visibleLabel = label.length > contentLimit
+      ? `${label.slice(0, Math.max(0, contentLimit - 3))}...`
       : label;
+
+    return `${scenePrefix}${visibleLabel}`;
   }
 }

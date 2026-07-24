@@ -7,6 +7,52 @@
       content="width=device-width, initial-scale=1"
     >
     <title>88x31 Builder | Web Badge &amp; Button Generator</title>
+    <meta
+      name="description"
+      content="Create animated 88x31 web badges and buttons in your browser."
+    >
+    <link
+      rel="canonical"
+      href="https://jruizcabrejos.github.io/slop-buttonmaker/"
+    >
+    <meta property="og:type" content="website">
+    <meta
+      property="og:url"
+      content="https://jruizcabrejos.github.io/slop-buttonmaker/"
+    >
+    <meta
+      property="og:title"
+      content="88x31 Builder | Web Badge &amp; Button Generator"
+    >
+    <meta
+      property="og:description"
+      content="Create animated 88x31 web badges and buttons in your browser."
+    >
+    <meta
+      property="og:image"
+      content="https://jruizcabrejos.github.io/slop-buttonmaker/embed.gif"
+    >
+    <meta property="og:image:type" content="image/gif">
+    <meta property="og:image:width" content="88">
+    <meta property="og:image:height" content="31">
+    <meta property="og:image:alt" content="Animated Hello, World! badge">
+    <meta name="twitter:card" content="summary">
+    <meta
+      name="twitter:title"
+      content="88x31 Builder | Web Badge &amp; Button Generator"
+    >
+    <meta
+      name="twitter:description"
+      content="Create animated 88x31 web badges and buttons in your browser."
+    >
+    <meta
+      name="twitter:image"
+      content="https://jruizcabrejos.github.io/slop-buttonmaker/embed.gif"
+    >
+    <meta
+      name="twitter:image:alt"
+      content="Animated Hello, World! badge"
+    >
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" type="text/css" href="font/stylesheet.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -119,6 +165,40 @@
           </div>
           <p id="layers_empty">No layers yet.</p>
           <ol id="layer_list" aria-label="Layer stack"></ol>
+          <div id="sequence_toolbar" aria-label="Layer animation">
+            <label for="layer_sequence_step">Scene:</label>
+            <select
+              id="layer_sequence_step"
+              title="Scene for selected layer"
+              disabled
+            >
+              <option value="" selected>Always</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+            <label for="sequence_preview">View:</label>
+            <select
+              id="sequence_preview"
+              title="Preview scene"
+              disabled
+            >
+              <option value="auto" selected>Auto</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
         </section>
       </div>
 
@@ -648,9 +728,15 @@
                 title="Custom loop count"
               >
             </span>
-            <label for="gif_duration">
-              GIF duration:
-              <select id="gif_duration">
+            <label
+              for="gif_duration"
+              title="Length of one animation cycle"
+            >
+              Cycle:
+              <select
+                id="gif_duration"
+                aria-label="Animation cycle duration"
+              >
                 <option value="1">1 second</option>
                 <option value="2" selected>2 seconds</option>
                 <option value="3">3 seconds</option>

@@ -327,6 +327,40 @@ aside li:not(.menu-heading) {
   line-height: 18px;
 }
 
+#sequence_toolbar {
+  display: flex;
+  flex: 0 0 29px;
+  min-width: 0;
+  gap: 3px;
+  padding: 3px;
+  align-items: center;
+  box-sizing: border-box;
+  background-color: #babade;
+  border-top: 1px solid #000;
+}
+
+#sequence_toolbar label {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+#sequence_toolbar select {
+  min-width: 0;
+  height: 21px;
+}
+
+#layer_sequence_step {
+  width: 54px;
+}
+
+#sequence_preview {
+  width: 45px;
+}
+
+.sequence-inactive {
+  visibility: hidden !important;
+}
+
 .menu {
   display: none;
   width: 100%;

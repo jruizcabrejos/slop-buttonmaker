@@ -4,6 +4,11 @@ import {
   quantize
 } from "../gifenc/gifenc.esm.js";
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
+import {
+  applySequenceVisibility,
+  getSequenceStepAtTime,
+  getSequenceSteps
+} from "./sequence.js";
 
 const SMOOTH_RENDER_SCALE = 4;
 const SNAPSHOT_WIDTH = BUTTON_WIDTH * SMOOTH_RENDER_SCALE;
@@ -136,7 +141,11 @@ export class ExportController {
   }
 
   async savePng(settings) {
-    const canvas = await this.captureButton(settings.rendering);
+    const canvas = await this.captureButton(
+      settings.rendering,
+      null,
+      settings.duration
+    );
     const blob = await this.canvasToBlob(canvas, "image/png");
     this.downloadBlob(blob, "button.png");
   }
@@ -157,7 +166,8 @@ export class ExportController {
     for (let frame = 0; frame < frameCount; frame += 1) {
       const canvas = await this.captureButton(
         settings.rendering,
-        frame * frameDelay
+        frame * frameDelay,
+        settings.duration
       );
       const context = canvas.getContext("2d", {
         willReadFrequently: true
@@ -194,7 +204,11 @@ export class ExportController {
     this.downloadBlob(blob, "button.gif");
   }
 
-  async captureButton(rendering, animationTime = null) {
+  async captureButton(
+    rendering,
+    animationTime = null,
+    sequenceDuration = 2
+  ) {
     const imageSnapshots = this.snapshotLayerImages(animationTime);
     const backgroundSource = document.getElementById(
       "background_animation_source"
@@ -207,7 +221,8 @@ export class ExportController {
       imageSnapshots,
       backgroundSnapshot,
       rendering,
-      animationTime
+      animationTime,
+      sequenceDuration
     );
 
     try {
@@ -272,7 +287,8 @@ export class ExportController {
     imageSnapshots,
     backgroundSnapshot,
     rendering,
-    animationTime
+    animationTime,
+    sequenceDuration
   ) {
     const host = document.createElement("div");
     const frame = document.createElement("div");
@@ -316,10 +332,31 @@ export class ExportController {
 
     this.freezeTextEffects(button, animationTime);
     this.freezeButtonEffect(button, animationTime);
+    this.freezeSequence(button, animationTime, sequenceDuration);
     frame.appendChild(button);
     host.appendChild(frame);
     document.body.appendChild(host);
     return { host, button, renderRoot: frame };
+  }
+
+  freezeSequence(button, animationTime, durationSeconds) {
+    const layers = Array.from(
+      button.querySelectorAll(".editor-layer")
+    );
+    const steps = getSequenceSteps(layers);
+    const preview = document.getElementById("sequence_preview").value;
+    const previewStep = Number(preview);
+    const activeStep = Number.isFinite(animationTime)
+      ? getSequenceStepAtTime(
+        steps,
+        animationTime,
+        Number(durationSeconds) * 1000
+      )
+      : preview === "auto"
+        ? steps[0] ?? null
+        : previewStep;
+
+    applySequenceVisibility(layers, activeStep);
   }
 
   freezeTextEffects(button, animationTime) {
