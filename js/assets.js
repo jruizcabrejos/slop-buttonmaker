@@ -11,13 +11,17 @@ const MAX_LIBRARY_ASSETS = 1000;
 
 const IMAGE_TYPES = new Map([
   [".gif", "image/gif"],
+  [".ico", "image/x-icon"],
   [".jpeg", "image/jpeg"],
   [".jpg", "image/jpeg"],
   [".png", "image/png"],
   [".svg", "image/svg+xml"],
   [".webp", "image/webp"]
 ]);
-const SUPPORTED_IMAGE_TYPES = new Set(IMAGE_TYPES.values());
+const SUPPORTED_IMAGE_TYPES = new Set([
+  ...IMAGE_TYPES.values(),
+  "image/vnd.microsoft.icon"
+]);
 
 export class AssetLibraryController {
   constructor({ media }) {

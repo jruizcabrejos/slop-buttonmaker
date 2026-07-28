@@ -692,11 +692,20 @@ body > p {
 }
 
 .text-effect-bounce {
-  animation: 800ms ease-in-out infinite text-bounce;
+  animation:
+    var(--text-effect-duration, 1200ms)
+    ease-in-out
+    infinite
+    text-bounce;
 }
 
 .text-effect-glow {
-  animation: 1000ms ease-in-out infinite alternate text-effect-glow;
+  animation:
+    var(--text-effect-duration, 1200ms)
+    ease-in-out
+    infinite
+    alternate
+    text-effect-glow;
 }
 
 .text-effect-fly-in {

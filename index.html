@@ -9,7 +9,7 @@
     <title>88x31 Builder | Web Badge &amp; Button Generator</title>
     <meta
       name="description"
-      content="Create animated 88x31 web badges and buttons in your browser."
+      content="Create and customize 88x31 web buttons and badges, alongside a curated collection of free tools and resources."
     >
     <link
       rel="canonical"
@@ -26,7 +26,7 @@
     >
     <meta
       property="og:description"
-      content="Create animated 88x31 web badges and buttons in your browser."
+      content="Create and customize 88x31 web buttons and badges, alongside a curated collection of free tools and resources."
     >
     <meta
       property="og:image"
@@ -43,7 +43,7 @@
     >
     <meta
       name="twitter:description"
-      content="Create animated 88x31 web badges and buttons in your browser."
+      content="Create and customize 88x31 web buttons and badges, alongside a curated collection of free tools and resources."
     >
     <meta
       name="twitter:image"
@@ -239,43 +239,11 @@
             </button>
           </li>
           <li>
-            <label for="border_color">Border color:</label>
-            <input
-              type="color"
-              value="#D3D3D3"
-              name="border-color"
-              id="border_color"
-            >
-          </li>
-          <li class="control-pair">
-            <label for="border_width">
-              Border width:
-              <input
-                type="number"
-                value="1"
-                min="0"
-                max="15"
-                name="border-width"
-                id="border_width"
-              >
-            </label>
-            <label for="border_style">
-              Border style:
-              <select name="border-style" id="border_style">
-                <option value="solid">Solid</option>
-                <option value="outset" selected>Outset</option>
-                <option value="inset">Inset</option>
-                <option value="dashed">Dashed</option>
-                <option value="dotted">Dotted</option>
-              </select>
-            </label>
-          </li>
-          <li>
             <label for="background_image">Background image:</label>
             <input
               name="background"
               type="file"
-              accept="image/png,image/gif,image/jpeg,image/webp,image/svg+xml,.png,.gif,.jpg,.jpeg,.webp,.svg"
+              accept="image/png,image/gif,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.png,.gif,.jpg,.jpeg,.webp,.svg,.ico"
               id="background_image"
             >
             <select
@@ -309,6 +277,46 @@
             </p>
           </li>
           <li>
+            <label for="border_color">Border color:</label>
+            <input
+              type="color"
+              value="#D3D3D3"
+              name="border-color"
+              id="border_color"
+            >
+            <button
+              type="button"
+              id="border_transparent"
+              class="transparent-color-button"
+              aria-label="Use a transparent adaptive border"
+              aria-pressed="false"
+              title="Transparent / adaptive bevel"
+            ></button>
+          </li>
+          <li class="control-pair">
+            <label for="border_width">
+              Border width:
+              <input
+                type="number"
+                value="1"
+                min="0"
+                max="15"
+                name="border-width"
+                id="border_width"
+              >
+            </label>
+            <label for="border_style">
+              Border style:
+              <select name="border-style" id="border_style">
+                <option value="solid">Solid</option>
+                <option value="outset" selected>Outset</option>
+                <option value="inset">Inset</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+              </select>
+            </label>
+          </li>
+          <li>
             <label for="button_effect">Button effect:</label>
             <select id="button_effect">
               <option value="none" selected>None</option>
@@ -339,7 +347,7 @@
               type="file"
               id="new_image"
               name="new-image"
-              accept="image/gif,image/png,image/jpeg,image/webp,image/svg+xml,.gif,.png,.jpg,.jpeg,.webp,.svg"
+              accept="image/gif,image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.gif,.png,.jpg,.jpeg,.webp,.svg,.ico"
             >
           </li>
           <li class="image-control-row hidden">
@@ -492,25 +500,35 @@
                 <option value="wave">Text Wave</option>
               </select>
             </label>
-            <span id="text_motion_options" class="effect-options hidden">
-              <select
-                id="text_effect_direction"
-                aria-label="Text movement direction"
-                title="Direction"
-              >
-                <option value="left-to-right" selected>Left to right</option>
-                <option value="right-to-left">Right to left</option>
-              </select>
+            <label
+              id="text_speed_options"
+              class="effect-options hidden"
+              for="text_effect_speed"
+            >
+              Speed:
               <select
                 id="text_effect_speed"
                 aria-label="Text effect speed"
-                title="Speed"
               >
                 <option value="slow">Slow</option>
                 <option value="normal" selected>Normal</option>
                 <option value="fast">Fast</option>
               </select>
-            </span>
+            </label>
+            <label
+              id="text_motion_options"
+              class="effect-options hidden"
+              for="text_effect_direction"
+            >
+              Direction:
+              <select
+                id="text_effect_direction"
+                aria-label="Text movement direction"
+              >
+                <option value="left-to-right" selected>Left to right</option>
+                <option value="right-to-left">Right to left</option>
+              </select>
+            </label>
             <label
               id="text_color_effect_options"
               class="effect-options hidden"
@@ -556,7 +574,7 @@
           <input
             type="file"
             id="local_asset_input"
-            accept="image/gif,image/png,image/jpeg,image/webp,image/svg+xml,.gif,.png,.jpg,.jpeg,.webp,.svg,.zip,application/zip"
+            accept="image/gif,image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.gif,.png,.jpg,.jpeg,.webp,.svg,.ico,.zip,application/zip"
             multiple
           >
           <button
@@ -604,6 +622,21 @@
                 >
               </a>
             </li>
+            <li>
+              <a
+                href="https://www.rw-designer.com/icon-library"
+                target="_blank"
+                rel="noopener"
+                title="Visit the RealWorld Icon Library"
+              >
+                <img
+                  src="graphics/sources/rw_graphics_banner88x31.png"
+                  width="88"
+                  height="31"
+                  alt="RealWorld Graphics"
+                >
+              </a>
+            </li>
           </ul>
         </section>
         <p
@@ -615,6 +648,16 @@
           No local assets.
         </p>
         <ul class="detail-grid">
+          <li>
+            <button
+              type="button"
+              class="detail-option"
+              data-media-asset="true"
+              data-session-credit="frame_asset_credit"
+            >
+              <img src="graphics/frame.gif" alt="frame">
+            </button>
+          </li>
           <li>
             <button type="button" class="detail-option">
               <img src="graphics/a1.png" alt="win95">
@@ -688,8 +731,8 @@
           <li>
             <label for="export_format">Export format:</label>
             <select id="export_format">
-              <option value="png" selected>PNG</option>
-              <option value="gif">GIF</option>
+              <option value="png">PNG</option>
+              <option value="gif" selected>GIF</option>
             </select>
           </li>
           <li>
@@ -745,8 +788,8 @@
             </label>
           </li>
           <li class="raw-project-row">
-            <button type="button" id="export_raw">Export raw</button>
-            <button type="button" id="import_raw">Import raw</button>
+            <button type="button" id="export_raw">Export raw JSON</button>
+            <button type="button" id="import_raw">Import raw JSON</button>
             <input
               type="file"
               id="import_raw_file"
@@ -848,8 +891,23 @@
           alt="Hekate button maker"
         >
       </a>
+      <a
+        id="frame_asset_credit"
+        href="https://0oxo0.neocities.org/"
+        target="_blank"
+        rel="noopener"
+        title="Frame inspiration by 0oxo0"
+        hidden
+      >
+        <img
+          src="graphics/inspired/0oxo0.gif"
+          width="88"
+          height="31"
+          alt="0oxo0"
+        >
+      </a>
     </div>
-    <p>Made by:</p>
+    <p>Adapted by:</p>
     <div class="maker-button">
       <a
         href="https://jruizcabrejos.com/"

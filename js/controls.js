@@ -45,9 +45,15 @@ export class ControlsController {
     this.backgroundTransparent = document.getElementById(
       "background_transparent"
     );
+    this.borderTransparent = document.getElementById(
+      "border_transparent"
+    );
     this.fontTransparent = document.getElementById("font_transparent");
     this.buttonEffect = document.getElementById("button_effect");
     this.textEffect = document.getElementById("text_effect");
+    this.textSpeedOptions = document.getElementById(
+      "text_speed_options"
+    );
     this.textMotionOptions = document.getElementById(
       "text_motion_options"
     );
@@ -76,6 +82,8 @@ export class ControlsController {
       this.applyDefaultBackground.bind(this);
     this.toggleBackgroundTransparency =
       this.toggleBackgroundTransparency.bind(this);
+    this.toggleBorderTransparency =
+      this.toggleBorderTransparency.bind(this);
     this.toggleFontTransparency =
       this.toggleFontTransparency.bind(this);
     this.syncTextEffectOptions =
@@ -94,6 +102,10 @@ export class ControlsController {
     this.backgroundTransparent.addEventListener(
       "click",
       this.toggleBackgroundTransparency
+    );
+    this.borderTransparent.addEventListener(
+      "click",
+      this.toggleBorderTransparency
     );
     this.fontTransparent.addEventListener(
       "click",
@@ -181,14 +193,52 @@ export class ControlsController {
 
   bindDetails() {
     for (const button of this.detailButtons) {
-      button.addEventListener("click", () => {
-        const image = button.querySelector("img").cloneNode(true);
-        image.draggable = false;
-        this.editor.addLayer(image, {
-          type: "detail",
-          animationClass: "glow_box"
-        });
+      button.addEventListener("click", () => this.addDetail(button));
+    }
+  }
+
+  async addDetail(button) {
+    const source = button.querySelector("img");
+    let layer = null;
+
+    if (button.dataset.mediaAsset === "true") {
+      try {
+        const response = await fetch(source.currentSrc || source.src);
+
+        if (!response.ok) {
+          throw new Error(`Asset request failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const pathname = new URL(source.currentSrc || source.src).pathname;
+        const filename =
+          decodeURIComponent(pathname.split("/").at(-1)) ||
+          source.alt ||
+          "asset";
+        const file = new File(
+          [blob],
+          filename,
+          { type: blob.type || "image/gif" }
+        );
+        layer = await this.media.addImageFile(
+          file,
+          null,
+          { type: "detail" }
+        );
+      } catch (error) {
+        console.warn("The built-in asset could not be loaded.", error);
+      }
+    } else {
+      const image = source.cloneNode(true);
+      image.draggable = false;
+      layer = this.editor.addLayer(image, {
+        type: "detail",
+        animationClass: "glow_box"
       });
+    }
+
+    if (layer && button.dataset.sessionCredit) {
+      document.getElementById(button.dataset.sessionCredit).hidden = false;
     }
   }
 
@@ -214,6 +264,7 @@ export class ControlsController {
         this.applyBorderAppearance();
         break;
       case "border_color":
+        this.setTransparentState(this.borderTransparent, false);
         this.applyBorderAppearance();
         break;
       case "border_style":
@@ -249,6 +300,12 @@ export class ControlsController {
     const active = !this.isTransparent(this.fontTransparent);
     this.setTransparentState(this.fontTransparent, active);
     this.previewFont();
+  }
+
+  toggleBorderTransparency() {
+    const active = !this.isTransparent(this.borderTransparent);
+    this.setTransparentState(this.borderTransparent, active);
+    this.applyBorderAppearance();
   }
 
   setTransparentState(button, active) {
@@ -336,6 +393,14 @@ export class ControlsController {
     );
     const borderStyle = document.getElementById("border_style").value;
     const borderColor = document.getElementById("border_color").value;
+    const transparent = this.isTransparent(this.borderTransparent);
+    const adaptiveBevel =
+      transparent && ["inset", "outset"].includes(borderStyle);
+    const light = "rgba(255, 255, 255, 0.55)";
+    const dark = "rgba(0, 0, 0, 0.45)";
+    const adaptiveColors = borderStyle === "inset"
+      ? `${dark} ${light} ${light} ${dark}`
+      : `${light} ${dark} ${dark} ${light}`;
 
     this.editor.button.style.borderWidth = `${safeWidth}px`;
     this.editor.button.style.borderStyle = borderStyle;
@@ -346,8 +411,12 @@ export class ControlsController {
       `${BUTTON_HEIGHT - 2 * safeWidth}px`;
 
     Object.assign(this.editor.borderLayer.style, {
-      borderColor,
-      borderStyle,
+      borderColor: transparent
+        ? adaptiveBevel
+          ? adaptiveColors
+          : "transparent"
+        : borderColor,
+      borderStyle: adaptiveBevel ? "solid" : borderStyle,
       borderWidth: `${safeWidth}px`,
       boxSizing: "border-box",
       height: `${BUTTON_HEIGHT}px`,
@@ -464,6 +533,7 @@ export class ControlsController {
       const letter = document.createElement("span");
       letter.className = "text-effect-letter";
       letter.style.setProperty("--letter-index", String(letterIndex));
+      letter.style.textDecoration = text.style.textDecoration;
       letter.textContent = character;
       fragment.appendChild(letter);
       letterIndex += 1;
@@ -474,6 +544,10 @@ export class ControlsController {
 
   syncTextEffectOptions() {
     const effect = this.textEffect.value;
+    this.textSpeedOptions.classList.toggle(
+      "hidden",
+      effect === "none"
+    );
     this.textMotionOptions.classList.toggle(
       "hidden",
       effect !== "fly-in"
@@ -498,6 +572,8 @@ export class ControlsController {
         : this.editor.button.style.background,
       backgroundTransparent:
         this.isTransparent(this.backgroundTransparent),
+      borderTransparent:
+        this.isTransparent(this.borderTransparent),
       position: {
         left: this.readPosition(this.editor.button.style.left),
         top: this.readPosition(this.editor.button.style.top)
@@ -555,6 +631,10 @@ export class ControlsController {
       }
     }
 
+    this.setTransparentState(
+      this.borderTransparent,
+      Boolean(state?.borderTransparent)
+    );
     this.applyBorderAppearance();
     this.applyButtonEffect(this.buttonEffect.value);
 
@@ -607,6 +687,7 @@ export class ControlsController {
 
     this.textForm.reset();
     this.setTransparentState(this.backgroundTransparent, false);
+    this.setTransparentState(this.borderTransparent, false);
     this.setTransparentState(this.fontTransparent, false);
     this.applyBaseDefaults();
     this.syncTextEffectOptions();

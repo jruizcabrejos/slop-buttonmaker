@@ -3,6 +3,8 @@ import { GifAnimation } from "./gif-animation.js";
 
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/gif",
+  "image/vnd.microsoft.icon",
+  "image/x-icon",
   "image/jpeg",
   "image/png",
   "image/svg+xml",
@@ -501,7 +503,7 @@ export class MediaController {
   isSupportedImage(file) {
     return (
       SUPPORTED_IMAGE_TYPES.has(file.type.toLowerCase()) ||
-      /\.(gif|jpe?g|png|svg|webp)$/i.test(file.name)
+      /\.(gif|ico|jpe?g|png|svg|webp)$/i.test(file.name)
     );
   }
 

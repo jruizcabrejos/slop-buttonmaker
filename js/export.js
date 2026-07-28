@@ -13,9 +13,7 @@ import {
 const SMOOTH_RENDER_SCALE = 4;
 const SNAPSHOT_WIDTH = BUTTON_WIDTH * SMOOTH_RENDER_SCALE;
 const SNAPSHOT_HEIGHT = BUTTON_HEIGHT * SMOOTH_RENDER_SCALE;
-const BOUNCE_DURATION = 800;
 const BOUNCE_DISTANCE = 4;
-const GLOW_DURATION = 1000;
 const TEXT_EFFECT_DURATIONS = {
   slow: 2000,
   normal: 1200,
@@ -375,7 +373,7 @@ export class ExportController {
       switch (effect) {
         case "bounce": {
           const phase = Number.isFinite(animationTime)
-            ? (animationTime % BOUNCE_DURATION) / BOUNCE_DURATION
+            ? (animationTime % duration) / duration
             : 0;
           const offset =
             -BOUNCE_DISTANCE * Math.sin(Math.PI * phase);
@@ -384,7 +382,7 @@ export class ExportController {
         }
         case "glow": {
           const phase = Number.isFinite(animationTime)
-            ? (animationTime % GLOW_DURATION) / GLOW_DURATION
+            ? (animationTime % duration) / duration
             : 0.25;
           const blur = 2 + 4 * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2));
           text.style.textShadow =
