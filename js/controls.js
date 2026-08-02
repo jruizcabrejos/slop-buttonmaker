@@ -22,6 +22,8 @@ const TEXT_EFFECT_DURATIONS = {
   normal: 1200,
   fast: 600
 };
+const CLASSIC_BORDER_COLOR = "#c0c0c0";
+const CLASSIC_BORDER_WIDTH = 2;
 const PROJECT_CONTROL_IDS = [
   "background_color",
   "border_color",
@@ -45,12 +47,17 @@ export class ControlsController {
     this.backgroundTransparent = document.getElementById(
       "background_transparent"
     );
+    this.borderColor = document.getElementById("border_color");
+    this.borderWidth = document.getElementById("border_width");
+    this.borderStyle = document.getElementById("border_style");
+    this.borderDefault = document.getElementById("border_default");
     this.borderTransparent = document.getElementById(
       "border_transparent"
     );
     this.fontTransparent = document.getElementById("font_transparent");
     this.buttonEffect = document.getElementById("button_effect");
     this.textEffect = document.getElementById("text_effect");
+    this.textEffectEpoch = performance.now();
     this.textSpeedOptions = document.getElementById(
       "text_speed_options"
     );
@@ -62,9 +69,9 @@ export class ControlsController {
     );
     this.baseControls = [
       this.backgroundColor,
-      document.getElementById("border_color"),
-      document.getElementById("border_width"),
-      document.getElementById("border_style"),
+      this.borderColor,
+      this.borderWidth,
+      this.borderStyle,
       document.getElementById("background_size"),
       document.getElementById("background_gradient"),
       this.buttonEffect
@@ -80,6 +87,7 @@ export class ControlsController {
     this.handleTabKeydown = this.handleTabKeydown.bind(this);
     this.applyDefaultBackground =
       this.applyDefaultBackground.bind(this);
+    this.applyDefaultBorder = this.applyDefaultBorder.bind(this);
     this.toggleBackgroundTransparency =
       this.toggleBackgroundTransparency.bind(this);
     this.toggleBorderTransparency =
@@ -99,6 +107,7 @@ export class ControlsController {
       "click",
       this.applyDefaultBackground
     );
+    this.borderDefault.addEventListener("click", this.applyDefaultBorder);
     this.backgroundTransparent.addEventListener(
       "click",
       this.toggleBackgroundTransparency
@@ -286,6 +295,14 @@ export class ControlsController {
     this.applyBackgroundSizing();
   }
 
+  applyDefaultBorder() {
+    this.borderColor.value = CLASSIC_BORDER_COLOR;
+    this.borderWidth.value = String(CLASSIC_BORDER_WIDTH);
+    this.borderStyle.value = "outset";
+    this.setTransparentState(this.borderTransparent, false);
+    this.applyBorderAppearance();
+  }
+
   toggleBackgroundTransparency() {
     const active = !this.isTransparent(this.backgroundTransparent);
     this.setTransparentState(this.backgroundTransparent, active);
@@ -384,21 +401,31 @@ export class ControlsController {
   }
 
   applyBorderAppearance() {
-    const borderWidth = Number(
-      document.getElementById("border_width").value
-    );
+    const borderWidth = Number(this.borderWidth.value);
     const safeWidth = Math.max(
       0,
       Math.min(15, Number.isFinite(borderWidth) ? borderWidth : 0)
     );
-    const borderStyle = document.getElementById("border_style").value;
-    const borderColor = document.getElementById("border_color").value;
+    const borderStyle = this.borderStyle.value;
+    const borderColor = this.borderColor.value;
     const transparent = this.isTransparent(this.borderTransparent);
-    const adaptiveBevel =
-      transparent && ["inset", "outset"].includes(borderStyle);
-    const light = "rgba(255, 255, 255, 0.55)";
-    const dark = "rgba(0, 0, 0, 0.45)";
-    const adaptiveColors = borderStyle === "inset"
+    const bevel = ["inset", "outset"].includes(borderStyle);
+    const classic =
+      !transparent &&
+      safeWidth === CLASSIC_BORDER_WIDTH &&
+      borderColor.toLowerCase() === CLASSIC_BORDER_COLOR;
+    const classicOutset = classic && borderStyle === "outset";
+    const light = transparent
+      ? "rgba(255, 255, 255, 0.55)"
+      : classic
+        ? "#ffffff"
+        : this.mixBorderColor(borderColor, 255, 0.65);
+    const dark = transparent
+      ? "rgba(0, 0, 0, 0.45)"
+      : classic
+        ? "#000000"
+        : this.mixBorderColor(borderColor, 0, 0.65);
+    const bevelColors = borderStyle === "inset"
       ? `${dark} ${light} ${light} ${dark}`
       : `${light} ${dark} ${dark} ${light}`;
 
@@ -409,21 +436,47 @@ export class ControlsController {
       `${BUTTON_WIDTH - 2 * safeWidth}px`;
     this.editor.button.style.height =
       `${BUTTON_HEIGHT - 2 * safeWidth}px`;
+    this.editor.borderLayer.classList.toggle(
+      "button-border-classic",
+      classicOutset
+    );
 
     Object.assign(this.editor.borderLayer.style, {
-      borderColor: transparent
-        ? adaptiveBevel
-          ? adaptiveColors
-          : "transparent"
-        : borderColor,
-      borderStyle: adaptiveBevel ? "solid" : borderStyle,
-      borderWidth: `${safeWidth}px`,
+      borderColor: classicOutset
+        ? "transparent"
+        : bevel
+          ? bevelColors
+          : transparent
+            ? "transparent"
+            : borderColor,
+      borderStyle: classicOutset
+        ? "none"
+        : bevel
+          ? "solid"
+          : borderStyle,
+      borderWidth: classicOutset ? "0" : `${safeWidth}px`,
       boxSizing: "border-box",
       height: `${BUTTON_HEIGHT}px`,
       left: `${-safeWidth}px`,
       top: `${-safeWidth}px`,
       width: `${BUTTON_WIDTH}px`
     });
+  }
+
+  mixBorderColor(color, target, amount) {
+    const channels = color.match(/[0-9a-f]{2}/gi)?.map(value => (
+      Number.parseInt(value, 16)
+    ));
+
+    if (!channels || channels.length !== 3) {
+      return color;
+    }
+
+    return `#${channels.map(channel => (
+      Math.round(channel + (target - channel) * amount)
+        .toString(16)
+        .padStart(2, "0")
+    )).join("")}`;
   }
 
   drawText(event) {
@@ -508,6 +561,10 @@ export class ControlsController {
     text.style.setProperty(
       "--text-effect-duration",
       `${TEXT_EFFECT_DURATIONS[speed]}ms`
+    );
+    text.style.setProperty(
+      "--text-effect-delay",
+      `${-(performance.now() - this.textEffectEpoch).toFixed(3)}ms`
     );
 
     if (safeEffect !== "none") {
@@ -681,6 +738,7 @@ export class ControlsController {
   }
 
   reset() {
+    this.textEffectEpoch = performance.now();
     for (const control of this.baseControls) {
       this.resetControl(control);
     }

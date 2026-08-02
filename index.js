@@ -25,7 +25,12 @@ function init() {
   const drag = new DragController({ editor });
   const exportOptions = new ExportOptionsController({ editor });
   const sequence = new SequenceController({ editor });
-  new ExportController({ editor, media, options: exportOptions });
+  new ExportController({
+    editor,
+    media,
+    options: exportOptions,
+    sequence
+  });
   new ProjectController({ editor, media, controls, sequence });
   initAddons({ editor });
 

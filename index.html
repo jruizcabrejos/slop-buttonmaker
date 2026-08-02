@@ -292,6 +292,13 @@
               aria-pressed="false"
               title="Transparent / adaptive bevel"
             ></button>
+            <button
+              type="button"
+              id="border_default"
+              title="Restore the original 88x31 bevel"
+            >
+              Default
+            </button>
           </li>
           <li class="control-pair">
             <label for="border_width">
@@ -422,7 +429,13 @@
             </span>
             <label for="font_size">
               Font size:
-              <input type="number" id="font_size" value="10" min="1">
+              <input
+                type="number"
+                id="font_size"
+                value="10"
+                min="0.5"
+                step="0.5"
+              >
             </label>
           </div>
           <label for="font_family">
@@ -758,18 +771,28 @@
           <h4>Extended options</h4>
         </div>
         <ul>
+          <li class="control-pair export-render-row">
+            <label for="export_rendering">
+              Rendering:
+              <select id="export_rendering">
+                <option value="smooth" selected>Smooth</option>
+                <option value="pixelated">Pixelated</option>
+              </select>
+            </label>
+            <label for="export_scale">
+              Export scale:
+              <select id="export_scale">
+                <option value="1" selected>1x (88x31)</option>
+                <option value="2">2x (176x62)</option>
+                <option value="4">4x (352x124)</option>
+              </select>
+            </label>
+          </li>
           <li>
             <label for="export_format">Export format:</label>
             <select id="export_format">
               <option value="png">PNG</option>
               <option value="gif" selected>GIF</option>
-            </select>
-          </li>
-          <li>
-            <label for="export_rendering">Rendering:</label>
-            <select id="export_rendering">
-              <option value="smooth" selected>Smooth</option>
-              <option value="pixelated">Pixelated</option>
             </select>
           </li>
           <li class="gif-export-row hidden">
@@ -816,6 +839,37 @@
                 <option value="5">5 seconds</option>
               </select>
             </label>
+          </li>
+          <li class="scene-duration-row">
+            <label for="scene_duration_scene">Scene duration:</label>
+            <select id="scene_duration_scene">
+              <option value="1" selected>Scene 1</option>
+              <option value="2">Scene 2</option>
+              <option value="3">Scene 3</option>
+              <option value="4">Scene 4</option>
+              <option value="5">Scene 5</option>
+              <option value="6">Scene 6</option>
+              <option value="7">Scene 7</option>
+              <option value="8">Scene 8</option>
+            </select>
+            <input
+              type="number"
+              id="scene_duration_value"
+              value="1"
+              min="0.1"
+              max="30"
+              step="0.1"
+              aria-label="Selected scene duration in seconds"
+            >
+            <span>seconds</span>
+            <button
+              type="button"
+              id="scene_duration_default"
+              title="Use an equal share of the base cycle"
+            >
+              Default
+            </button>
+            <output id="scene_duration_total">No active scenes</output>
           </li>
           <li class="raw-project-row">
             <button type="button" id="export_raw">Export raw JSON</button>

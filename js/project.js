@@ -321,6 +321,31 @@ export class ProjectController {
       throw new Error("Invalid sequence settings.");
     }
 
+    if (project.sequence?.sceneDurations !== undefined) {
+      const durations = project.sequence.sceneDurations;
+
+      if (
+        !durations ||
+        typeof durations !== "object" ||
+        Array.isArray(durations)
+      ) {
+        throw new Error("Invalid scene durations.");
+      }
+
+      for (const [step, duration] of Object.entries(durations)) {
+        if (
+          !Number.isInteger(Number(step)) ||
+          Number(step) < 1 ||
+          Number(step) > MAX_SEQUENCE_SCENES ||
+          !Number.isFinite(Number(duration)) ||
+          Number(duration) < 0.1 ||
+          Number(duration) > 30
+        ) {
+          throw new Error("Invalid scene duration.");
+        }
+      }
+    }
+
     let borderCount = 0;
 
     for (const layer of project.layers) {

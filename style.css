@@ -213,6 +213,18 @@ aside li:not(.menu-heading) {
   -webkit-user-drag: none;
 }
 
+.button-border-layer.button-border-classic {
+  background:
+    linear-gradient(#fff, #fff) 0 0 / 87px 1px no-repeat,
+    linear-gradient(#fff, #fff) 0 1px / 86px 1px no-repeat,
+    linear-gradient(#fff, #fff) 0 0 / 1px 30px no-repeat,
+    linear-gradient(#fff, #fff) 1px 0 / 1px 29px no-repeat,
+    linear-gradient(#000, #000) 87px 0 / 1px 31px no-repeat,
+    linear-gradient(#000, #000) 86px 1px / 1px 30px no-repeat,
+    linear-gradient(#000, #000) 0 30px / 88px 1px no-repeat,
+    linear-gradient(#000, #000) 1px 29px / 87px 1px no-repeat;
+}
+
 .text-layer,
 #font_preview .message {
   width: max-content;
@@ -462,7 +474,8 @@ input[type="color"] {
     inset -1px -1px 0 #d8d8ef;
 }
 
-#background_default {
+#background_default,
+#border_default {
   margin-left: 5px;
   padding: 2px 5px;
 }
@@ -547,6 +560,35 @@ input[type="color"] {
 
 #gif_loop_count {
   width: 38px;
+}
+
+.export-render-row {
+  gap: 8px;
+}
+
+#export_rendering {
+  width: 70px;
+}
+
+#export_scale {
+  width: 105px;
+}
+
+.scene-duration-row {
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+#scene_duration_value {
+  width: 48px;
+}
+
+#scene_duration_default {
+  padding: 2px 5px;
+}
+
+#scene_duration_total {
+  margin-left: 4px;
 }
 
 .hidden,
@@ -697,6 +739,7 @@ body > p {
     ease-in-out
     infinite
     text-bounce;
+  animation-delay: var(--text-effect-delay, 0ms);
 }
 
 .text-effect-glow {
@@ -706,6 +749,7 @@ body > p {
     infinite
     alternate
     text-effect-glow;
+  animation-delay: var(--text-effect-delay, 0ms);
 }
 
 .text-effect-fly-in {
@@ -714,6 +758,7 @@ body > p {
     linear
     infinite
     text-slide-left-to-right;
+  animation-delay: var(--text-effect-delay, 0ms);
 }
 
 .text-effect-fly-in[data-text-effect-direction="right-to-left"] {
@@ -726,6 +771,7 @@ body > p {
     steps(1, end)
     infinite
     text-blink-colors;
+  animation-delay: var(--text-effect-delay, 0ms);
 }
 
 .text-effect-letter {
@@ -738,7 +784,9 @@ body > p {
     linear
     infinite
     text-letter-sweep;
-  animation-delay: calc(var(--letter-index) * 70ms);
+  animation-delay: calc(
+    var(--text-effect-delay, 0ms) + var(--letter-index) * 70ms
+  );
 }
 
 .text-effect-wave .text-effect-letter {
@@ -747,7 +795,9 @@ body > p {
     ease-in-out
     infinite
     text-letter-wave;
-  animation-delay: calc(var(--letter-index) * -80ms);
+  animation-delay: calc(
+    var(--text-effect-delay, 0ms) + var(--letter-index) * -80ms
+  );
 }
 
 .button-effect-overlay {

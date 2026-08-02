@@ -11,6 +11,7 @@ import {
 } from "./sequence.js";
 
 const SMOOTH_RENDER_SCALE = 4;
+const EXPORT_SCALES = [1, 2, 4];
 const SNAPSHOT_WIDTH = BUTTON_WIDTH * SMOOTH_RENDER_SCALE;
 const SNAPSHOT_HEIGHT = BUTTON_HEIGHT * SMOOTH_RENDER_SCALE;
 const BOUNCE_DISTANCE = 4;
@@ -30,6 +31,7 @@ export class ExportOptionsController {
   constructor({ editor }) {
     this.format = document.getElementById("export_format");
     this.rendering = document.getElementById("export_rendering");
+    this.scale = document.getElementById("export_scale");
     this.gifDuration = document.getElementById("gif_duration");
     this.gifFrameRate = document.getElementById("gif_frame_rate");
     this.gifLoop = document.getElementById("gif_loop");
@@ -57,6 +59,7 @@ export class ExportOptionsController {
     return {
       format: this.format.value,
       rendering: this.rendering.value,
+      scale: this.readScale(this.scale.value),
       duration: Number(this.gifDuration.value),
       frameRate: Number(this.gifFrameRate.value),
       repeat
@@ -77,10 +80,16 @@ export class ExportOptionsController {
     this.gifLoopCount.disabled = !custom;
   }
 
+  readScale(value) {
+    const scale = Number(value);
+    return EXPORT_SCALES.includes(scale) ? scale : 1;
+  }
+
   reset() {
     for (const control of [
       this.format,
       this.rendering,
+      this.scale,
       this.gifDuration,
       this.gifFrameRate,
       this.gifLoop
@@ -98,10 +107,11 @@ export class ExportOptionsController {
 }
 
 export class ExportController {
-  constructor({ editor, media, options }) {
+  constructor({ editor, media, options, sequence }) {
     this.editor = editor;
     this.media = media;
     this.options = options;
+    this.sequence = sequence;
     this.saveButton = document.getElementById("save_img");
     this.defaultButtonText = this.saveButton.textContent;
     this.save = this.save.bind(this);
@@ -115,6 +125,10 @@ export class ExportController {
     }
 
     const settings = this.options.getSettings();
+    Object.assign(
+      settings,
+      this.sequence.getExportTiming(settings.duration)
+    );
     this.saveButton.disabled = true;
     this.saveButton.textContent =
       settings.format === "gif" ? "Recording..." : "Saving...";
@@ -142,7 +156,9 @@ export class ExportController {
     const canvas = await this.captureButton(
       settings.rendering,
       null,
-      settings.duration
+      settings.duration,
+      settings.sceneDurationsMs,
+      settings.scale
     );
     const blob = await this.canvasToBlob(canvas, "image/png");
     this.downloadBlob(blob, "button.png");
@@ -165,16 +181,20 @@ export class ExportController {
       const canvas = await this.captureButton(
         settings.rendering,
         frame * frameDelay,
-        settings.duration
+        settings.duration,
+        settings.sceneDurationsMs,
+        settings.scale
       );
+      const outputWidth = canvas.width;
+      const outputHeight = canvas.height;
       const context = canvas.getContext("2d", {
         willReadFrequently: true
       });
       const rgba = context.getImageData(
         0,
         0,
-        BUTTON_WIDTH,
-        BUTTON_HEIGHT
+        outputWidth,
+        outputHeight
       ).data;
       const palette = quantize(rgba, 256, {
         format: "rgba4444",
@@ -185,8 +205,8 @@ export class ExportController {
 
       encoder.writeFrame(
         indexedFrame,
-        BUTTON_WIDTH,
-        BUTTON_HEIGHT,
+        outputWidth,
+        outputHeight,
         {
           palette,
           delay: frameDelay,
@@ -205,7 +225,9 @@ export class ExportController {
   async captureButton(
     rendering,
     animationTime = null,
-    sequenceDuration = 2
+    sequenceDuration = 2,
+    sceneDurationsMs = {},
+    exportScale = 1
   ) {
     const imageSnapshots = this.snapshotLayerImages(animationTime);
     const backgroundSource = document.getElementById(
@@ -220,7 +242,8 @@ export class ExportController {
       backgroundSnapshot,
       rendering,
       animationTime,
-      sequenceDuration
+      sequenceDuration,
+      sceneDurationsMs
     );
 
     try {
@@ -241,7 +264,11 @@ export class ExportController {
         }
       );
 
-      return this.normalizeCanvas(renderedCanvas, rendering);
+      return this.normalizeCanvas(
+        renderedCanvas,
+        rendering,
+        exportScale
+      );
     } finally {
       exportHost.host.remove();
     }
@@ -286,7 +313,8 @@ export class ExportController {
     backgroundSnapshot,
     rendering,
     animationTime,
-    sequenceDuration
+    sequenceDuration,
+    sceneDurationsMs
   ) {
     const host = document.createElement("div");
     const frame = document.createElement("div");
@@ -330,14 +358,24 @@ export class ExportController {
 
     this.freezeTextEffects(button, animationTime);
     this.freezeButtonEffect(button, animationTime);
-    this.freezeSequence(button, animationTime, sequenceDuration);
+    this.freezeSequence(
+      button,
+      animationTime,
+      sequenceDuration,
+      sceneDurationsMs
+    );
     frame.appendChild(button);
     host.appendChild(frame);
     document.body.appendChild(host);
     return { host, button, renderRoot: frame };
   }
 
-  freezeSequence(button, animationTime, durationSeconds) {
+  freezeSequence(
+    button,
+    animationTime,
+    durationSeconds,
+    sceneDurationsMs
+  ) {
     const layers = Array.from(
       button.querySelectorAll(".editor-layer")
     );
@@ -348,7 +386,8 @@ export class ExportController {
       ? getSequenceStepAtTime(
         steps,
         animationTime,
-        Number(durationSeconds) * 1000
+        Number(durationSeconds) * 1000,
+        sceneDurationsMs
       )
       : preview === "auto"
         ? steps[0] ?? null
@@ -603,10 +642,15 @@ export class ExportController {
     return ((value % divisor) + divisor) % divisor;
   }
 
-  normalizeCanvas(renderedCanvas, rendering) {
+  normalizeCanvas(renderedCanvas, rendering, exportScale = 1) {
+    const safeScale = EXPORT_SCALES.includes(Number(exportScale))
+      ? Number(exportScale)
+      : 1;
+    const outputWidth = BUTTON_WIDTH * safeScale;
+    const outputHeight = BUTTON_HEIGHT * safeScale;
     const canvas = document.createElement("canvas");
-    canvas.width = BUTTON_WIDTH;
-    canvas.height = BUTTON_HEIGHT;
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
     const context = canvas.getContext("2d");
     const smooth = rendering === "smooth";
 
@@ -622,8 +666,8 @@ export class ExportController {
       renderedCanvas.height,
       0,
       0,
-      BUTTON_WIDTH,
-      BUTTON_HEIGHT
+      outputWidth,
+      outputHeight
     );
 
     return canvas;
