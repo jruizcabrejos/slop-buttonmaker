@@ -256,24 +256,30 @@
               <option value="contain" selected>Tiling</option>
             </select>
           </li>
-          <li>
-            <label for="background_gradient">Background gradient:</label>
-            <input
-              type="text"
+          <li class="css-background-row">
+            <label for="background_gradient">CSS background:</label>
+            <textarea
               name="background"
               id="background_gradient"
-              value="linear-gradient(0deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)"
-            >
+              rows="3"
+              spellcheck="false"
+            >linear-gradient(0deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)</textarea>
           </li>
           <li>
             <p>
-              HINT: generate the gradient
+              HINT: Customize CSS backgrounds
               <a
                 href="https://cssgradient.io/"
                 rel="noopener"
                 target="_blank"
-              >here,</a>
-              then paste the CSS style above!
+              >here</a>, or create your own border with Max Bittker tool
+              <a
+                href="https://maxbittker.github.io/broider/"
+                rel="noopener"
+                target="_blank"
+              >here</a>.
+              <br>
+              Paste the CSS code above.
             </p>
           </li>
           <li>
@@ -295,7 +301,7 @@
             <button
               type="button"
               id="border_default"
-              title="Restore the original 88x31 bevel"
+              title="Set border color to RGB 128, 128, 128"
             >
               Default
             </button>
@@ -324,14 +330,52 @@
             </label>
           </li>
           <li>
-            <label for="button_effect">Button effect:</label>
-            <select id="button_effect">
-              <option value="none" selected>None</option>
-              <option value="glitch">Tremble</option>
-              <option value="distortion">Distortion</option>
-              <option value="shimmer">Shimmer</option>
-              <option value="rotate">Rotate</option>
-            </select>
+            <label for="border_radius">Corner radius:</label>
+            <input
+              type="number"
+              value="0"
+              min="0"
+              max="44"
+              step="1"
+              name="border-radius"
+              id="border_radius"
+            >
+          </li>
+          <li class="button-effect-row">
+            <label for="button_effect">
+              Button effect:
+              <select id="button_effect">
+                <option value="none" selected>None</option>
+                <option value="glitch">Tremble</option>
+                <option value="distortion">Distortion</option>
+                <option value="shimmer">Shimmer</option>
+                <option value="rotate">Rotate</option>
+              </select>
+            </label>
+            <label
+              id="button_effect_speed_options"
+              class="effect-options hidden"
+              for="button_effect_speed"
+            >
+              Speed:
+              <select id="button_effect_speed">
+                <option value="slow">Slow</option>
+                <option value="normal" selected>Normal</option>
+                <option value="fast">Fast</option>
+              </select>
+            </label>
+            <label
+              id="button_effect_color_options"
+              class="effect-options hidden"
+              for="button_effect_color"
+            >
+              Color:
+              <input
+                type="color"
+                value="#ffffff"
+                id="button_effect_color"
+              >
+            </label>
           </li>
         </ul>
       </section>
@@ -677,6 +721,21 @@
                   width="88"
                   height="31"
                   alt="Commonplace Page"
+                >
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://ribo.zone/free/snippets/borders"
+                target="_blank"
+                rel="noopener"
+                title="Visit Ribo Zone border snippets"
+              >
+                <img
+                  src="graphics/sources/ribosone.gif"
+                  width="88"
+                  height="31"
+                  alt="Ribo Zone"
                 >
               </a>
             </li>

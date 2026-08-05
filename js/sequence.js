@@ -133,6 +133,7 @@ export class SequenceController {
     this.durationTotal = document.getElementById(
       "scene_duration_total"
     );
+    this.targetStep = null;
     this.sceneDurations = {};
     this.startedAt = performance.now();
     this.lastSignature = "";
@@ -143,6 +144,8 @@ export class SequenceController {
     this.changeDurationScene = this.changeDurationScene.bind(this);
     this.setSceneDuration = this.setSceneDuration.bind(this);
     this.clearSceneDuration = this.clearSceneDuration.bind(this);
+    this.handleLayerAdded = this.handleLayerAdded.bind(this);
+    this.handleSelectionChanged = this.handleSelectionChanged.bind(this);
     this.restart = this.restart.bind(this);
     this.tick = this.tick.bind(this);
 
@@ -166,7 +169,8 @@ export class SequenceController {
       this.updateControls();
       this.invalidate();
     });
-    this.editor.onSelectionChanged(() => this.updateControls());
+    this.editor.onLayerAdded(this.handleLayerAdded);
+    this.editor.onSelectionChanged(this.handleSelectionChanged);
     this.editor.onReset(() => this.reset());
 
     this.updateControls();
@@ -176,24 +180,52 @@ export class SequenceController {
   assignScene() {
     const layer = this.editor.getSelectedLayer();
 
-    if (!layer || this.editor.isBorderLayer(layer)) {
+    if (this.editor.isBorderLayer(layer)) {
       return;
     }
 
-    const step = Number(this.sceneSelect.value);
+    const step = this.parseStep(this.sceneSelect.value);
+    this.targetStep = step;
 
-    if (
-      Number.isInteger(step) &&
-      step >= 1 &&
-      step <= MAX_SEQUENCE_SCENES
-    ) {
-      layer.dataset.sequenceStep = String(step);
+    if (layer) {
+      this.writeStep(layer, step);
+      this.restart();
+      this.editor.notifyLayersChanged();
     } else {
-      delete layer.dataset.sequenceStep;
+      this.updateControls();
+    }
+  }
+
+  handleLayerAdded(layer) {
+    if (!this.editor.isBorderLayer(layer)) {
+      this.writeStep(layer, this.targetStep);
+    }
+  }
+
+  handleSelectionChanged(layer) {
+    if (layer && !this.editor.isBorderLayer(layer)) {
+      this.targetStep = readSequenceStep(layer);
     }
 
-    this.restart();
-    this.editor.notifyLayersChanged();
+    this.updateControls();
+  }
+
+  parseStep(value) {
+    const step = Number(value);
+
+    return Number.isInteger(step) &&
+      step >= 1 &&
+      step <= MAX_SEQUENCE_SCENES
+      ? step
+      : null;
+  }
+
+  writeStep(layer, step) {
+    if (step === null) {
+      delete layer.dataset.sequenceStep;
+    } else {
+      layer.dataset.sequenceStep = String(step);
+    }
   }
 
   changePreview() {
@@ -288,11 +320,14 @@ export class SequenceController {
     const editable = Boolean(
       layer && !this.editor.isBorderLayer(layer)
     );
+    const borderSelected = Boolean(
+      layer && this.editor.isBorderLayer(layer)
+    );
 
-    this.sceneSelect.disabled = !editable;
+    this.sceneSelect.disabled = borderSelected;
     this.sceneSelect.value = editable
       ? String(readSequenceStep(layer) ?? "")
-      : "";
+      : String(this.targetStep ?? "");
     this.previewSelect.disabled =
       getSequenceSteps(this.editor.getLayers()).length === 0;
     this.updateDurationControls();
@@ -367,6 +402,7 @@ export class SequenceController {
       this.durationSelect.value = duration;
     }
 
+    this.targetStep = null;
     this.sceneDurations = {};
 
     for (const [step, storedDuration] of Object.entries(
@@ -393,10 +429,11 @@ export class SequenceController {
   }
 
   reset() {
+    this.targetStep = null;
     this.sceneDurations = {};
     this.durationSceneSelect.value = "1";
     this.sceneSelect.value = "";
-    this.sceneSelect.disabled = true;
+    this.sceneSelect.disabled = false;
     this.previewSelect.value = "auto";
     this.previewSelect.disabled = true;
     this.updateDurationControls();

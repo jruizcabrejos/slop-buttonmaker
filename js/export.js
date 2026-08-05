@@ -4,6 +4,7 @@ import {
   quantize
 } from "../gifenc/gifenc.esm.js";
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
+import { rasterizeBorderImage } from "./css-background.js";
 import {
   applySequenceVisibility,
   getSequenceStepAtTime,
@@ -25,6 +26,11 @@ const BUTTON_EFFECT_DURATIONS = {
   distortion: 480,
   shimmer: 1200,
   rotate: 1200
+};
+const BUTTON_EFFECT_SPEED_FACTORS = {
+  slow: 2,
+  normal: 1,
+  fast: 0.5
 };
 
 export class ExportOptionsController {
@@ -249,6 +255,7 @@ export class ExportController {
     try {
       await this.waitForImages(exportHost.button);
       await this.applyImageCrops(exportHost.button, rendering);
+      await this.prepareBorderImage(exportHost.button, rendering);
       await this.waitForImages(exportHost.button);
 
       const renderScale =
@@ -331,6 +338,7 @@ export class ExportController {
     button.style.imageRendering =
       rendering === "pixelated" ? "pixelated" : "auto";
     button.classList.remove("is-dragging");
+    frame.style.borderRadius = button.style.borderRadius || "0";
 
     if (backgroundSnapshot) {
       button.style.backgroundImage = `url("${backgroundSnapshot}")`;
@@ -491,9 +499,13 @@ export class ExportController {
   freezeButtonEffect(button, animationTime) {
     const effect = button.dataset.buttonEffect;
     const overlay = button.querySelector(".button-effect-overlay");
-    const duration =
+    const speedFactor =
+      BUTTON_EFFECT_SPEED_FACTORS[button.dataset.buttonEffectSpeed] ||
+      BUTTON_EFFECT_SPEED_FACTORS.normal;
+    const duration = (
       BUTTON_EFFECT_DURATIONS[effect] ||
-      BUTTON_EFFECT_DURATIONS.rotate;
+      BUTTON_EFFECT_DURATIONS.rotate
+    ) * speedFactor;
     const phase = Number.isFinite(animationTime)
       ? (animationTime % duration) / duration
       : 0.25;
@@ -550,6 +562,44 @@ export class ExportController {
       default:
         button.style.transform = "none";
         break;
+    }
+  }
+
+  async prepareBorderImage(button, rendering) {
+    const borderLayer = button.querySelector(".button-border-layer");
+
+    if (
+      !borderLayer ||
+      !/^url\(/i.test(borderLayer.style.borderImageSource)
+    ) {
+      return;
+    }
+
+    try {
+      const dataUrl = await rasterizeBorderImage(borderLayer, {
+        width: BUTTON_WIDTH,
+        height: BUTTON_HEIGHT,
+        scale: rendering === "smooth" ? SMOOTH_RENDER_SCALE : 1,
+        radius: Number.parseFloat(button.style.borderRadius) || 0,
+        pixelated: rendering === "pixelated"
+      });
+
+      if (!dataUrl) {
+        return;
+      }
+
+      Object.assign(borderLayer.style, {
+        backgroundImage: `url("${dataUrl}")`,
+        backgroundPosition: "0 0",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "100% 100%",
+        borderColor: "transparent",
+        borderImageSource: "none",
+        borderStyle: "none",
+        borderWidth: "0"
+      });
+    } catch (error) {
+      console.warn("The CSS border image could not be rasterized.", error);
     }
   }
 

@@ -441,9 +441,36 @@ aside li:not(.menu-heading) {
 
 .menu input[type="text"],
 .menu input[type="file"],
+.menu textarea,
 .text textarea {
   min-width: 0;
   flex: 1;
+}
+
+.css-background-row {
+  align-items: flex-start !important;
+}
+
+#background_gradient {
+  min-height: 54px;
+  resize: vertical;
+}
+
+.button-effect-row {
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.button-effect-row > label {
+  display: inline-flex;
+  min-width: 0;
+  margin: 0;
+  gap: 4px;
+  align-items: center;
+}
+
+.button-effect-row > label.hidden {
+  display: none;
 }
 
 input[type="number"] {
@@ -805,12 +832,17 @@ body > p {
   inset: 0;
   z-index: 10000;
   display: none;
+  border-radius: inherit;
   pointer-events: none;
 }
 
 .button-effect-glitch {
   transform-origin: center;
-  animation: 320ms steps(2, end) infinite button-glitch;
+  animation:
+    var(--button-effect-duration, 320ms)
+    steps(2, end)
+    infinite
+    button-glitch;
 }
 
 .button-effect-glitch .button-effect-overlay {
@@ -827,7 +859,11 @@ body > p {
     transparent 4px,
     transparent 6px
   );
-  animation: 240ms steps(2, end) infinite button-glitch-overlay;
+  animation:
+    var(--button-effect-overlay-duration, 240ms)
+    steps(2, end)
+    infinite
+    button-glitch-overlay;
 }
 
 .button-effect-distortion .button-effect-overlay {
@@ -850,7 +886,11 @@ body > p {
     );
   background-size: 130% 100%, 100% 100%;
   mix-blend-mode: screen;
-  animation: 480ms steps(3, end) infinite button-distortion;
+  animation:
+    var(--button-effect-duration, 480ms)
+    steps(3, end)
+    infinite
+    button-distortion;
 }
 
 .button-effect-shimmer .button-effect-overlay {
@@ -858,19 +898,27 @@ body > p {
   background-image: linear-gradient(
     105deg,
     transparent 30%,
-    rgba(255, 255, 255, 0.72) 48%,
-    rgba(255, 255, 255, 0.25) 53%,
+    var(--button-effect-color-strong, rgba(255, 255, 255, 0.72)) 48%,
+    var(--button-effect-color-soft, rgba(255, 255, 255, 0.25)) 53%,
     transparent 70%
   );
   background-position: -120% 0;
   background-size: 200% 100%;
   background-repeat: no-repeat;
-  animation: 1200ms linear infinite button-shimmer;
+  animation:
+    var(--button-effect-duration, 1200ms)
+    linear
+    infinite
+    button-shimmer;
 }
 
 .button-effect-rotate {
   transform-origin: center;
-  animation: 1200ms ease-in-out infinite button-rotate;
+  animation:
+    var(--button-effect-duration, 1200ms)
+    ease-in-out
+    infinite
+    button-rotate;
 }
 
 .export-host {

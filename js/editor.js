@@ -12,6 +12,7 @@ export class Editor {
     this.zIndex = 0;
     this.layerSequence = 0;
     this.layerCleanups = new Map();
+    this.layerAddedHandlers = new Set();
     this.layersChangedHandlers = new Set();
     this.selectionChangedHandlers = new Set();
     this.selectedLayer = null;
@@ -76,6 +77,7 @@ export class Editor {
 
     this.button.appendChild(element);
     this.normalizeLayerOrder();
+    this.notifyLayerAdded(element);
     this.selectLayer(element);
     this.notifyLayersChanged();
     return element;
@@ -281,6 +283,17 @@ export class Editor {
   onLayersChanged(handler) {
     this.layersChangedHandlers.add(handler);
     return () => this.layersChangedHandlers.delete(handler);
+  }
+
+  onLayerAdded(handler) {
+    this.layerAddedHandlers.add(handler);
+    return () => this.layerAddedHandlers.delete(handler);
+  }
+
+  notifyLayerAdded(layer) {
+    for (const handler of this.layerAddedHandlers) {
+      handler(layer);
+    }
   }
 
   onSelectionChanged(handler) {

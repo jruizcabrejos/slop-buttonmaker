@@ -1,4 +1,5 @@
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
+import { parseVisualCss } from "./css-background.js";
 
 const DEFAULT_PREVIEW_TEXT = "Sphynx of black quartz, judge my vow";
 const BUTTON_EFFECTS = new Set([
@@ -22,16 +23,31 @@ const TEXT_EFFECT_DURATIONS = {
   normal: 1200,
   fast: 600
 };
+const BUTTON_EFFECT_DURATIONS = {
+  glitch: 320,
+  distortion: 480,
+  shimmer: 1200,
+  rotate: 1200
+};
+const BUTTON_EFFECT_SPEED_FACTORS = {
+  slow: 2,
+  normal: 1,
+  fast: 0.5
+};
 const CLASSIC_BORDER_COLOR = "#c0c0c0";
 const CLASSIC_BORDER_WIDTH = 2;
+const DEFAULT_BORDER_COLOR = "#808080";
 const PROJECT_CONTROL_IDS = [
   "background_color",
   "border_color",
   "border_width",
   "border_style",
+  "border_radius",
   "background_size",
   "background_gradient",
-  "button_effect"
+  "button_effect",
+  "button_effect_speed",
+  "button_effect_color"
 ];
 
 export class ControlsController {
@@ -50,14 +66,28 @@ export class ControlsController {
     this.borderColor = document.getElementById("border_color");
     this.borderWidth = document.getElementById("border_width");
     this.borderStyle = document.getElementById("border_style");
+    this.borderRadius = document.getElementById("border_radius");
     this.borderDefault = document.getElementById("border_default");
     this.borderTransparent = document.getElementById(
       "border_transparent"
     );
     this.fontTransparent = document.getElementById("font_transparent");
     this.buttonEffect = document.getElementById("button_effect");
+    this.buttonEffectSpeed = document.getElementById(
+      "button_effect_speed"
+    );
+    this.buttonEffectColor = document.getElementById(
+      "button_effect_color"
+    );
+    this.buttonEffectSpeedOptions = document.getElementById(
+      "button_effect_speed_options"
+    );
+    this.buttonEffectColorOptions = document.getElementById(
+      "button_effect_color_options"
+    );
     this.textEffect = document.getElementById("text_effect");
     this.textEffectEpoch = performance.now();
+    this.cssBackgroundVisual = {};
     this.textSpeedOptions = document.getElementById(
       "text_speed_options"
     );
@@ -72,9 +102,12 @@ export class ControlsController {
       this.borderColor,
       this.borderWidth,
       this.borderStyle,
+      this.borderRadius,
       document.getElementById("background_size"),
       document.getElementById("background_gradient"),
-      this.buttonEffect
+      this.buttonEffect,
+      this.buttonEffectSpeed,
+      this.buttonEffectColor
     ];
     this.textForm = document.querySelector("section.text form");
     this.textControls = this.textForm.querySelectorAll(
@@ -96,6 +129,8 @@ export class ControlsController {
       this.toggleFontTransparency.bind(this);
     this.syncTextEffectOptions =
       this.syncTextEffectOptions.bind(this);
+    this.syncButtonEffectOptions =
+      this.syncButtonEffectOptions.bind(this);
     this.previewFont = this.previewFont.bind(this);
     this.drawText = this.drawText.bind(this);
 
@@ -270,6 +305,7 @@ export class ControlsController {
         this.applyBackgroundSizing();
         break;
       case "border_width":
+      case "border_radius":
         this.applyBorderAppearance();
         break;
       case "border_color":
@@ -280,7 +316,12 @@ export class ControlsController {
         this.applyBorderAppearance();
         break;
       case "button_effect":
+        this.syncButtonEffectOptions();
         this.applyButtonEffect(control.value);
+        break;
+      case "button_effect_speed":
+      case "button_effect_color":
+        this.applyButtonEffect(this.buttonEffect.value);
         break;
       default:
         break;
@@ -296,9 +337,7 @@ export class ControlsController {
   }
 
   applyDefaultBorder() {
-    this.borderColor.value = CLASSIC_BORDER_COLOR;
-    this.borderWidth.value = String(CLASSIC_BORDER_WIDTH);
-    this.borderStyle.value = "outset";
+    this.borderColor.value = DEFAULT_BORDER_COLOR;
     this.setTransparentState(this.borderTransparent, false);
     this.applyBorderAppearance();
   }
@@ -336,6 +375,19 @@ export class ControlsController {
 
   applyButtonEffect(effect) {
     const safeEffect = BUTTON_EFFECTS.has(effect) ? effect : "none";
+    const speed = Object.hasOwn(
+      BUTTON_EFFECT_SPEED_FACTORS,
+      this.buttonEffectSpeed.value
+    )
+      ? this.buttonEffectSpeed.value
+      : "normal";
+    const color = /^#[0-9a-f]{6}$/i.test(this.buttonEffectColor.value)
+      ? this.buttonEffectColor.value
+      : "#ffffff";
+    const speedFactor = BUTTON_EFFECT_SPEED_FACTORS[speed];
+    const duration = Math.round(
+      (BUTTON_EFFECT_DURATIONS[safeEffect] || 1200) * speedFactor
+    );
 
     for (const name of BUTTON_EFFECTS) {
       if (name !== "none") {
@@ -344,53 +396,191 @@ export class ControlsController {
     }
 
     this.editor.button.dataset.buttonEffect = safeEffect;
+    this.editor.button.dataset.buttonEffectSpeed = speed;
+    this.editor.button.dataset.buttonEffectColor = color;
+    this.editor.button.style.setProperty(
+      "--button-effect-duration",
+      `${duration}ms`
+    );
+    this.editor.button.style.setProperty(
+      "--button-effect-overlay-duration",
+      `${Math.round(240 * speedFactor)}ms`
+    );
+    this.editor.button.style.setProperty(
+      "--button-effect-color-strong",
+      this.hexToRgba(color, 0.72)
+    );
+    this.editor.button.style.setProperty(
+      "--button-effect-color-soft",
+      this.hexToRgba(color, 0.25)
+    );
+
     if (safeEffect !== "none") {
       this.editor.button.classList.add(`button-effect-${safeEffect}`);
     }
   }
 
-  applyBackgroundValue(value, input = null) {
-    const trimmedValue = value.trim();
+  syncButtonEffectOptions() {
+    const effect = this.buttonEffect.value;
+    this.buttonEffectSpeedOptions.classList.toggle(
+      "hidden",
+      effect === "none"
+    );
+    this.buttonEffectColorOptions.classList.toggle(
+      "hidden",
+      effect !== "shimmer"
+    );
+  }
 
-    if (!trimmedValue) {
-      this.media.clearBackgroundImage();
-      this.editor.button.style.background = "";
-      input?.setCustomValidity("");
-      return true;
-    }
+  hexToRgba(color, alpha) {
+    const channels = color.match(/[0-9a-f]{2}/gi)?.map(value => (
+      Number.parseInt(value, 16)
+    ));
 
-    const style = document.createElement("div").style;
+    return channels
+      ? `rgba(${channels.join(", ")}, ${alpha})`
+      : `rgba(255, 255, 255, ${alpha})`;
+  }
 
-    if (/(?:^|;)\s*background\s*:/i.test(trimmedValue)) {
-      style.cssText = trimmedValue;
-    } else {
-      style.background = trimmedValue;
-    }
+  applyBackgroundValue(value, input = null, options = {}) {
+    const visual = parseVisualCss(value);
 
-    const background = style.background;
-
-    if (!background) {
+    if (!visual) {
       input?.setCustomValidity(
-        "Enter a background value or CSS background declarations."
+        "Enter a background value, CSS declarations, or a CSS rule."
       );
       return false;
     }
 
     input?.setCustomValidity("");
     this.media.clearBackgroundImage();
-    this.editor.button.style.background = background;
+    this.cssBackgroundVisual = visual.empty ? {} : visual;
+    this.editor.button.style.background = visual.background || "";
+    this.editor.button.style.backgroundClip =
+      visual.backgroundClip || "";
+    this.editor.button.style.imageRendering =
+      visual.imageRendering || "";
+
+    if (!visual.empty && options.syncControls !== false) {
+      this.syncCssVisualControls(visual);
+    }
+
+    this.applyBorderAppearance();
     return true;
   }
 
+  syncCssVisualControls(visual) {
+    const radius = this.readCssPixels(visual.borderRadius);
+
+    if (radius !== null) {
+      this.borderRadius.value = String(this.clampControlValue(
+        this.borderRadius,
+        radius
+      ));
+    }
+
+    const width = this.readCssPixels(visual.borderWidth);
+
+    if (width !== null) {
+      this.borderWidth.value = String(this.clampControlValue(
+        this.borderWidth,
+        width
+      ));
+    }
+
+    const borderStyle = visual.borderStyle?.match(
+      /(?:^|\s)(solid|outset|inset|dashed|dotted)(?:\s|$)/i
+    )?.[1]?.toLowerCase();
+
+    if (borderStyle) {
+      this.borderStyle.value = borderStyle;
+    }
+
+    const borderColor = this.normalizeCssColor(visual.borderColor);
+
+    if (borderColor?.transparent) {
+      this.setTransparentState(this.borderTransparent, true);
+    } else if (borderColor?.hex) {
+      this.borderColor.value = borderColor.hex;
+      this.setTransparentState(this.borderTransparent, false);
+    }
+  }
+
+  readCssPixels(value) {
+    if (!value || (!value.endsWith("px") && value !== "0")) {
+      return null;
+    }
+
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  clampControlValue(control, value) {
+    const minimum = Number(control.min);
+    const maximum = Number(control.max);
+    return Math.min(
+      Number.isFinite(maximum) ? maximum : value,
+      Math.max(Number.isFinite(minimum) ? minimum : value, value)
+    );
+  }
+
+  normalizeCssColor(value) {
+    if (!value) {
+      return null;
+    }
+
+    const colorStyle = document.createElement("div").style;
+    colorStyle.color = value;
+
+    if (!colorStyle.color) {
+      return null;
+    }
+
+    const context = document.createElement("canvas").getContext("2d");
+    context.fillStyle = colorStyle.color;
+    const normalized = context.fillStyle;
+
+    if (/^rgba\([^)]*,\s*0(?:\.0+)?\s*\)$/i.test(normalized)) {
+      return { transparent: true };
+    }
+
+    if (/^#[0-9a-f]{6}$/i.test(normalized)) {
+      return { hex: normalized };
+    }
+
+    if (/^#[0-9a-f]{3}$/i.test(normalized)) {
+      return {
+        hex: `#${Array.from(normalized.slice(1))
+          .map(channel => channel.repeat(2))
+          .join("")}`
+      };
+    }
+
+    const channels = normalized.match(
+      /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)/i
+    );
+
+    if (!channels) {
+      return null;
+    }
+
+    return {
+      hex: `#${channels.slice(1, 4).map(channel => (
+        Math.round(Number(channel)).toString(16).padStart(2, "0")
+      )).join("")}`
+    };
+  }
+
   applyBaseDefaults() {
-    this.applyBorderAppearance();
     const gradient = document.getElementById("background_gradient");
 
     if (!this.applyBackgroundValue(gradient.value, gradient)) {
       this.editor.button.style.background = this.backgroundColor.value;
+      this.applyBorderAppearance();
     }
     this.applyBackgroundSizing();
     this.applyButtonEffect(this.buttonEffect.value);
+    this.syncButtonEffectOptions();
   }
 
   applyBackgroundSizing() {
@@ -408,13 +598,22 @@ export class ControlsController {
     );
     const borderStyle = this.borderStyle.value;
     const borderColor = this.borderColor.value;
+    const borderRadius = Number(this.borderRadius.value);
+    const safeRadius = Math.max(
+      0,
+      Math.min(44, Number.isFinite(borderRadius) ? borderRadius : 0)
+    );
     const transparent = this.isTransparent(this.borderTransparent);
+    const borderImageSource =
+      this.cssBackgroundVisual.borderImageSource || "none";
+    const customBorderImage = borderImageSource !== "none";
     const bevel = ["inset", "outset"].includes(borderStyle);
     const classic =
       !transparent &&
       safeWidth === CLASSIC_BORDER_WIDTH &&
       borderColor.toLowerCase() === CLASSIC_BORDER_COLOR;
-    const classicOutset = classic && borderStyle === "outset";
+    const classicOutset =
+      classic && borderStyle === "outset" && !customBorderImage;
     const light = transparent
       ? "rgba(255, 255, 255, 0.55)"
       : classic
@@ -432,6 +631,7 @@ export class ControlsController {
     this.editor.button.style.borderWidth = `${safeWidth}px`;
     this.editor.button.style.borderStyle = borderStyle;
     this.editor.button.style.borderColor = "transparent";
+    this.editor.button.style.borderRadius = `${safeRadius}px`;
     this.editor.button.style.width =
       `${BUTTON_WIDTH - 2 * safeWidth}px`;
     this.editor.button.style.height =
@@ -455,7 +655,20 @@ export class ControlsController {
           ? "solid"
           : borderStyle,
       borderWidth: classicOutset ? "0" : `${safeWidth}px`,
+      borderRadius: `${safeRadius}px`,
+      borderImageSource,
+      borderImageSlice:
+        this.cssBackgroundVisual.borderImageSlice || "",
+      borderImageWidth:
+        this.cssBackgroundVisual.borderImageWidth || "",
+      borderImageOutset:
+        this.cssBackgroundVisual.borderImageOutset || "",
+      borderImageRepeat:
+        this.cssBackgroundVisual.borderImageRepeat || "",
       boxSizing: "border-box",
+      clipPath: safeRadius > 0
+        ? `inset(0 round ${safeRadius}px)`
+        : "none",
       height: `${BUTTON_HEIGHT}px`,
       left: `${-safeWidth}px`,
       top: `${-safeWidth}px`,
@@ -692,14 +905,19 @@ export class ControlsController {
       this.borderTransparent,
       Boolean(state?.borderTransparent)
     );
+    const cssInput = document.getElementById("background_gradient");
+    this.applyBackgroundValue(
+      cssInput.value,
+      cssInput,
+      { syncControls: false }
+    );
     this.applyBorderAppearance();
     this.applyButtonEffect(this.buttonEffect.value);
+    this.syncButtonEffectOptions();
 
     if (typeof state?.background === "string") {
-      this.applyBackgroundValue(
-        state.background,
-        document.getElementById("background_gradient")
-      );
+      this.media.clearBackgroundImage();
+      this.editor.button.style.background = state.background;
     }
     this.applyBackgroundSizing();
     const transparent = Boolean(state?.backgroundTransparent);

@@ -89,6 +89,7 @@ export class LayersController {
     label.dataset.layerAction = "select";
     label.draggable = false;
     label.textContent = this.getLabel(layer);
+    label.title = "Select or deselect layer";
 
     raise.disabled = index === 0;
     lower.disabled = index === layerCount - 1;
@@ -140,7 +141,9 @@ export class LayersController {
         this.editor.moveLayer(layer, -1);
         break;
       case "select":
-        this.editor.selectLayer(layer);
+        this.editor.selectLayer(
+          this.editor.getSelectedLayer() === layer ? null : layer
+        );
         break;
       case "remove":
         this.editor.removeLayer(layer);
@@ -279,6 +282,10 @@ export class LayersController {
         row.dataset.layerId === selectedLayer?.dataset.layerId;
       row.classList.toggle("is-selected", isSelected);
       row.setAttribute("aria-current", isSelected ? "true" : "false");
+      row.querySelector(".layer-select")?.setAttribute(
+        "aria-pressed",
+        String(isSelected)
+      );
     }
   }
 
