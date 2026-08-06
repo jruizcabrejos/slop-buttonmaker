@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   dispatch:
-    if: github.repository == 'jruizcabrejos/slop-buttonmaker'
+    if: github.repository == 'jruizcabrejos/buttonbuilder'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger website deployment
