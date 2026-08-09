@@ -12,6 +12,7 @@ export class GifAnimation {
     this.frames = frames;
     this.duration = frames.at(-1)?.endsAt || DEFAULT_FRAME_DELAY;
     this.distinctFrames = this.getDistinctFrames(frames);
+    this.animated = this.distinctFrames.length > 1;
     this.samplingPlans = new Map();
   }
 

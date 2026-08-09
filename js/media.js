@@ -36,6 +36,10 @@ export class MediaController {
     this.layerFiles = new Map();
     this.animations = new Map();
     this.animationPromises = new Map();
+    this.previewAnimations = new Map();
+    this.backgroundPreviewFrame = null;
+    this.previewStartedAt = performance.now();
+    this.previewFrameRequest = null;
     this.pendingUrls = new Set();
     this.backgroundRequest = 0;
     this.imageRequest = 0;
@@ -50,6 +54,8 @@ export class MediaController {
       this.updateActiveImageMode.bind(this);
     this.cropActiveImage = this.cropActiveImage.bind(this);
     this.handleLayerSelection = this.handleLayerSelection.bind(this);
+    this.renderAnimationPreview =
+      this.renderAnimationPreview.bind(this);
     this.releaseAllUrls = this.releaseAllUrls.bind(this);
 
     this.backgroundInput.addEventListener(
@@ -120,6 +126,10 @@ export class MediaController {
       this.editor.button.style.backgroundSize = this.backgroundSize.value;
       this.editor.button.style.backgroundRepeat =
         this.backgroundSize.value === "contain" ? "repeat" : "no-repeat";
+
+      if (this.getAnimationType(file)) {
+        this.startAnimationPreview(file);
+      }
       return true;
     } catch {
       this.releasePendingUrl(url);
@@ -178,6 +188,10 @@ export class MediaController {
       });
       this.setActiveImage(image);
       this.imageInput.value = "";
+
+      if (this.getAnimationType(file)) {
+        this.startAnimationPreview(file);
+      }
       return image;
     } catch {
       this.releasePendingUrl(url);
@@ -448,8 +462,11 @@ export class MediaController {
     }
 
     if (file) {
-      this.releaseAnimation(file);
       this.layerFiles.delete(image);
+
+      if (!this.isAnimationFileActive(file)) {
+        this.releaseAnimation(file);
+      }
     }
 
     if (this.activeImage === image) {
@@ -468,10 +485,14 @@ export class MediaController {
       this.backgroundUrl = null;
     }
 
-    if (this.backgroundFile) {
-      this.releaseAnimation(this.backgroundFile);
-      this.backgroundFile = null;
+    const file = this.backgroundFile;
+    this.backgroundFile = null;
+
+    if (file && !this.isAnimationFileActive(file)) {
+      this.releaseAnimation(file);
     }
+
+    this.backgroundPreviewFrame = null;
 
     this.syncBackgroundSizeState();
   }
@@ -486,6 +507,9 @@ export class MediaController {
     this.layerFiles.clear();
     this.animations.clear();
     this.animationPromises.clear();
+    this.previewAnimations.clear();
+    this.backgroundPreviewFrame = null;
+    this.stopAnimationPreview();
 
     for (const url of this.pendingUrls) {
       URL.revokeObjectURL(url);
@@ -543,6 +567,114 @@ export class MediaController {
     return /\.webp$/i.test(file.name) ? "webp" : null;
   }
 
+  startAnimationPreview(file) {
+    void this.ensureAnimation(file)
+      .then(animation => {
+        if (
+          animation?.animated &&
+          this.isAnimationFileActive(file)
+        ) {
+          // Later files join this clock instead of starting their own loop.
+          if (this.previewAnimations.size === 0) {
+            this.previewStartedAt = performance.now();
+          }
+
+          this.previewAnimations.set(file, animation);
+          this.scheduleAnimationPreview();
+        }
+      })
+      .catch(error => {
+        if (this.isAnimationFileActive(file)) {
+          console.warn(
+            `The ${file.name || "image"} preview could not be synchronized.`,
+            error
+          );
+        }
+      });
+  }
+
+  renderAnimationPreview(time) {
+    this.previewFrameRequest = null;
+    const elapsed = Math.max(0, time - this.previewStartedAt);
+    let hasActivePreview = false;
+
+    if (
+      this.backgroundFile &&
+      this.previewAnimations.has(this.backgroundFile)
+    ) {
+      const animation = this.previewAnimations.get(this.backgroundFile);
+      const source = animation?.getFrameAt(elapsed);
+
+      if (source) {
+        hasActivePreview = true;
+
+        if (source !== this.backgroundPreviewFrame) {
+          this.backgroundPreviewFrame = source;
+          this.editor.button.style.backgroundImage = `url("${source}")`;
+
+          if (this.backgroundSource) {
+            this.backgroundSource.setAttribute("src", source);
+          }
+        }
+      }
+    }
+
+    for (const [image, file] of this.layerFiles) {
+      if (
+        !image.isConnected ||
+        !this.previewAnimations.has(file)
+      ) {
+        continue;
+      }
+
+      const animation = this.previewAnimations.get(file);
+      const source = animation?.getFrameAt(elapsed);
+
+      if (!source) {
+        continue;
+      }
+
+      hasActivePreview = true;
+
+      if (source !== image.getAttribute("src")) {
+        image.setAttribute("src", source);
+      }
+    }
+
+    if (hasActivePreview) {
+      this.scheduleAnimationPreview();
+    }
+  }
+
+  scheduleAnimationPreview() {
+    if (this.previewFrameRequest === null) {
+      this.previewFrameRequest = requestAnimationFrame(
+        this.renderAnimationPreview
+      );
+    }
+  }
+
+  stopAnimationPreview() {
+    if (this.previewFrameRequest !== null) {
+      cancelAnimationFrame(this.previewFrameRequest);
+      this.previewFrameRequest = null;
+    }
+  }
+
+  isAnimationFileActive(file) {
+    if (this.backgroundFile === file) {
+      return true;
+    }
+
+    for (const layerFile of this.layerFiles.values()) {
+      if (layerFile === file) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   async ensureAnimation(file) {
     if (this.animations.has(file)) {
       return this.animations.get(file);
@@ -588,8 +720,13 @@ export class MediaController {
   }
 
   releaseAnimation(file) {
+    this.previewAnimations.delete(file);
     this.animations.delete(file);
     this.animationPromises.delete(file);
+
+    if (this.previewAnimations.size === 0) {
+      this.stopAnimationPreview();
+    }
   }
 
   reportInvalidFile(input) {
