@@ -105,12 +105,22 @@ export class GifAnimation {
       Number.isInteger(sampling?.frameIndex) &&
       Number.isInteger(sampling?.frameCount) &&
       sampling.frameCount > 1 &&
-      Number.isFinite(sampling?.frameDelay) &&
-      sampling.frameDelay > 0
+      (
+        (
+          Array.isArray(sampling?.frameTimes) &&
+          sampling.frameTimes.length === sampling.frameCount
+        ) ||
+        (
+          Number.isFinite(sampling?.frameDelay) &&
+          sampling.frameDelay > 0
+        )
+      )
     ) {
       const plan = this.getSamplingPlan(
         sampling.frameCount,
-        sampling.frameDelay
+        sampling.frameDelay,
+        sampling.frameTimes,
+        sampling.scheduleKey
       );
       return plan[sampling.frameIndex % plan.length];
     }
@@ -118,17 +128,28 @@ export class GifAnimation {
     return this.getFrameForTime(timeMs).source;
   }
 
-  getSamplingPlan(frameCount, frameDelay) {
-    const key = `${frameCount}:${frameDelay}`;
+  getSamplingPlan(
+    frameCount,
+    frameDelay,
+    frameTimes = null,
+    scheduleKey = null
+  ) {
+    const hasFrameTimes =
+      Array.isArray(frameTimes) && frameTimes.length === frameCount;
+    const key = hasFrameTimes
+      ? `schedule:${scheduleKey || frameTimes.join(",")}`
+      : `${frameCount}:${frameDelay}`;
 
     if (this.samplingPlans.has(key)) {
       return this.samplingPlans.get(key);
     }
 
-    let frames = Array.from(
-      { length: frameCount },
-      (_, index) => this.getFrameForTime(index * frameDelay)
-    );
+    let frames = hasFrameTimes
+      ? frameTimes.map(time => this.getFrameForTime(time))
+      : Array.from(
+        { length: frameCount },
+        (_, index) => this.getFrameForTime(index * frameDelay)
+      );
 
     // Keep native timing unless the export cadence aliases every sample
     // to the same visual source frame.
@@ -179,6 +200,12 @@ export class GifAnimation {
 
   hasVisualVariation(frames) {
     return frames.some(frame => frame.source !== frames[0]?.source);
+  }
+
+  hasVisualVariationAtTimes(frameTimes) {
+    return this.hasVisualVariation(
+      frameTimes.map(time => this.getFrameForTime(time))
+    );
   }
 
   static applyDisposal(context, previousFrame) {

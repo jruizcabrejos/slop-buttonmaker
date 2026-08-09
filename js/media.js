@@ -414,6 +414,33 @@ export class MediaController {
     await Promise.all(animationTasks);
   }
 
+  getExportAnimationDurations() {
+    return this.getExportAnimations().map(animation => animation.duration);
+  }
+
+  canSampleExportAnimations(frameTimes) {
+    return this.getExportAnimations().every(animation => (
+      animation.hasVisualVariationAtTimes(frameTimes)
+    ));
+  }
+
+  getExportAnimations() {
+    const files = new Set();
+
+    if (this.backgroundFile) {
+      files.add(this.backgroundFile);
+    }
+
+    for (const [image, file] of this.layerFiles) {
+      if (image.isConnected && !image.hidden) {
+        files.add(file);
+      }
+    }
+
+    return Array.from(files, file => this.animations.get(file))
+      .filter(animation => animation?.animated);
+  }
+
   getBackgroundAnimationFrame(timeMs, sampling = null) {
     return this.getAnimationFrame(
       this.backgroundFile,

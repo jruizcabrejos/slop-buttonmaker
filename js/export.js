@@ -6,6 +6,10 @@ import {
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
 import { rasterizeBorderImage } from "./css-background.js";
 import {
+  createGifFrameSchedule,
+  resolveAutoCycle as resolveGifAutoCycle
+} from "./gif-timing.js";
+import {
   applySequenceVisibility,
   getSequenceStepAtTime,
   getSequenceSteps
@@ -32,6 +36,16 @@ const BUTTON_EFFECT_SPEED_FACTORS = {
   normal: 1,
   fast: 0.5
 };
+const ANIMATED_TEXT_EFFECTS = new Set([
+  "bounce",
+  "glow",
+  "fly-in",
+  "blink",
+  "letter-sweep",
+  "wave"
+]);
+
+class ExportConfigurationError extends Error {}
 
 export class ExportOptionsController {
   constructor({ editor }) {
@@ -62,11 +76,14 @@ export class ExportOptionsController {
       )
       : Number(this.gifLoop.value);
 
+    const autoCycleSelected = this.gifDuration.value === "auto";
+
     return {
       format: this.format.value,
       rendering: this.rendering.value,
       scale: this.readScale(this.scale.value),
-      duration: Number(this.gifDuration.value),
+      duration: autoCycleSelected ? 2 : Number(this.gifDuration.value),
+      autoCycle: this.format.value === "gif" && autoCycleSelected,
       frameRate: Number(this.gifFrameRate.value),
       repeat
     };
@@ -131,10 +148,14 @@ export class ExportController {
     }
 
     const settings = this.options.getSettings();
-    Object.assign(
-      settings,
-      this.sequence.getExportTiming(settings.duration)
-    );
+
+    if (!settings.autoCycle) {
+      Object.assign(
+        settings,
+        this.sequence.getExportTiming(settings.duration)
+      );
+    }
+
     this.saveButton.disabled = true;
     this.saveButton.textContent =
       settings.format === "gif" ? "Recording..." : "Saving...";
@@ -145,13 +166,26 @@ export class ExportController {
       }
 
       if (settings.format === "gif") {
+        await this.media.prepareGifExport();
+
+        if (settings.autoCycle) {
+          settings.duration = this.resolveAutoCycle(settings.frameRate);
+          Object.assign(
+            settings,
+            this.sequence.getExportTiming(settings.duration)
+          );
+        }
         await this.saveGif(settings);
       } else {
         await this.savePng(settings);
       }
     } catch (error) {
-      console.error(error);
-      window.alert("The button could not be saved.");
+      if (error instanceof ExportConfigurationError) {
+        window.alert(error.message);
+      } else {
+        console.error(error);
+        window.alert("The button could not be saved.");
+      }
     } finally {
       this.saveButton.disabled = false;
       this.saveButton.textContent = this.defaultButtonText;
@@ -171,28 +205,25 @@ export class ExportController {
   }
 
   async saveGif(settings) {
-    await this.media.prepareGifExport();
-
     const encoder = GIFEncoder();
-    const frameDelay = Math.max(
-      20,
-      Math.round(1000 / settings.frameRate)
+    const schedule = createGifFrameSchedule(
+      settings.duration * 1000,
+      settings.frameRate
     );
-    const frameCount = Math.max(
-      1,
-      Math.round(settings.duration * settings.frameRate)
-    );
+    const exportDuration = schedule.durationMs / 1000;
 
-    for (let frame = 0; frame < frameCount; frame += 1) {
+    for (let frame = 0; frame < schedule.frames.length; frame += 1) {
+      const timing = schedule.frames[frame];
       const animationSampling = {
         frameIndex: frame,
-        frameCount,
-        frameDelay
+        frameCount: schedule.frames.length,
+        frameTimes: schedule.frameTimes,
+        scheduleKey: schedule.key
       };
       const canvas = await this.captureButton(
         settings.rendering,
-        frame * frameDelay,
-        settings.duration,
+        timing.timeMs,
+        exportDuration,
         settings.sceneDurationsMs,
         settings.scale,
         animationSampling
@@ -221,7 +252,7 @@ export class ExportController {
         outputHeight,
         {
           palette,
-          delay: frameDelay,
+          delay: timing.delayMs,
           repeat: settings.repeat,
           transparent: transparentIndex >= 0,
           transparentIndex: Math.max(0, transparentIndex)
@@ -232,6 +263,105 @@ export class ExportController {
     encoder.finish();
     const blob = new Blob([encoder.bytes()], { type: "image/gif" });
     this.downloadBlob(blob, "button.gif");
+  }
+
+  resolveAutoCycle(frameRate) {
+    if (this.sequence.hasActiveScenes()) {
+      throw new ExportConfigurationError(
+        "Auto cycle is unavailable while Scene sequencing is active. " +
+        "Choose a numbered Cycle or set scene layers to Always."
+      );
+    }
+
+    const mediaDurations = this.media.getExportAnimationDurations();
+    const effectDurations = this.getEffectAnimationDurations();
+    const resolution = resolveGifAutoCycle(
+      [...mediaDurations, ...effectDurations],
+      frameRate
+    );
+
+    if (resolution.reason === "no-animations") {
+      throw new ExportConfigurationError(
+        "Auto cycle needs at least one visible animated image or effect."
+      );
+    }
+
+    if (resolution.reason === "frame-rate") {
+      throw new ExportConfigurationError(
+        "The selected frame rate is too low for this shared loop. " +
+        "Choose a higher GIF frame rate or a numbered Cycle."
+      );
+    }
+
+    if (resolution.reason === "frame-limit") {
+      throw new ExportConfigurationError(
+        "Auto cycle would require too many frames at the selected frame " +
+        "rate. Choose a lower GIF frame rate or a numbered Cycle."
+      );
+    }
+
+    if (resolution.reason) {
+      throw new ExportConfigurationError(
+        "These animations do not have a short shared loop. " +
+        "Choose a numbered Cycle."
+      );
+    }
+
+    const schedule = createGifFrameSchedule(
+      resolution.durationMs,
+      frameRate
+    );
+
+    if (
+      !this.media.canSampleExportAnimations(schedule.frameTimes) ||
+      !this.canSampleEffectAnimations(
+        effectDurations,
+        schedule.frameTimes
+      )
+    ) {
+      throw new ExportConfigurationError(
+        "The selected frame rate skips one of the matched animations. " +
+        "Choose a higher GIF frame rate or a numbered Cycle."
+      );
+    }
+
+    return resolution.durationMs / 1000;
+  }
+
+  getEffectAnimationDurations() {
+    const durations = [];
+
+    for (const layer of this.editor.getLayers()) {
+      if (
+        layer.hidden ||
+        !ANIMATED_TEXT_EFFECTS.has(layer.dataset.textEffect)
+      ) {
+        continue;
+      }
+
+      durations.push(
+        TEXT_EFFECT_DURATIONS[layer.dataset.textEffectSpeed] ||
+        TEXT_EFFECT_DURATIONS.normal
+      );
+    }
+
+    const effect = this.editor.button.dataset.buttonEffect;
+
+    if (BUTTON_EFFECT_DURATIONS[effect]) {
+      const speedFactor =
+        BUTTON_EFFECT_SPEED_FACTORS[
+          this.editor.button.dataset.buttonEffectSpeed
+        ] || BUTTON_EFFECT_SPEED_FACTORS.normal;
+      durations.push(BUTTON_EFFECT_DURATIONS[effect] * speedFactor);
+    }
+
+    return durations;
+  }
+
+  canSampleEffectAnimations(durations, frameTimes) {
+    return durations.every(duration => (
+      new Set(frameTimes.map(time => time % duration)).size > 1
+    ));
   }
 
   async captureButton(

@@ -2,6 +2,7 @@ export const MAX_SEQUENCE_SCENES = 8;
 export const SEQUENCE_INACTIVE_CLASS = "sequence-inactive";
 const MIN_SCENE_DURATION_SECONDS = 0.1;
 const MAX_SCENE_DURATION_SECONDS = 30;
+const AUTO_DURATION_FALLBACK_SECONDS = 2;
 
 export function readSequenceStep(layer) {
   const step = Number(layer?.dataset?.sequenceStep);
@@ -121,6 +122,9 @@ export class SequenceController {
     this.sceneSelect = document.getElementById("layer_sequence_step");
     this.previewSelect = document.getElementById("sequence_preview");
     this.durationSelect = document.getElementById("gif_duration");
+    this.autoDurationOption = this.durationSelect.querySelector(
+      'option[value="auto"]'
+    );
     this.durationSceneSelect = document.getElementById(
       "scene_duration_scene"
     );
@@ -335,9 +339,13 @@ export class SequenceController {
 
   getTimeline(layers = this.editor.getLayers(), durationSeconds = null) {
     const steps = getSequenceSteps(layers);
-    const baseDuration = durationSeconds === null
-      ? Number(this.durationSelect.value)
-      : Number(durationSeconds);
+    const requestedDuration = durationSeconds === null
+      ? this.durationSelect.value
+      : durationSeconds;
+    const parsedDuration = Number(requestedDuration);
+    const baseDuration = Number.isFinite(parsedDuration) && parsedDuration > 0
+      ? parsedDuration
+      : AUTO_DURATION_FALLBACK_SECONDS;
 
     return getSequenceTimeline(
       steps,
@@ -363,22 +371,39 @@ export class SequenceController {
     const steps = getSequenceSteps(this.editor.getLayers());
     const timeline = this.getTimeline();
     const customDuration = Number(this.sceneDurations[step]);
+    const selectedDuration = Number(this.durationSelect.value);
+    const baseDuration = Number.isFinite(selectedDuration)
+      ? selectedDuration
+      : AUTO_DURATION_FALLBACK_SECONDS;
+    const autoDuration = this.durationSelect.value === "auto";
+    const activeScenes = steps.length > 0;
     const defaultDuration = Math.max(
       0.1,
-      Number(this.durationSelect.value) / Math.max(1, steps.length)
+      baseDuration / Math.max(1, steps.length)
     );
     const duration = Number.isFinite(customDuration)
       ? customDuration
       : defaultDuration;
 
     this.durationInput.value = this.formatDuration(duration);
-    this.durationDefault.disabled = !Number.isFinite(customDuration);
+    this.durationInput.disabled = autoDuration;
+    this.durationDefault.disabled =
+      autoDuration || !Number.isFinite(customDuration);
+    this.autoDurationOption.disabled = activeScenes;
     this.durationInput.dataset.custom = String(
       Number.isFinite(customDuration)
     );
-    this.durationTotal.value = steps.length === 0
-      ? "No active scenes"
-      : `Cycle: ${this.formatDuration(timeline.durationMs / 1000)}s`;
+    this.durationTotal.value = autoDuration
+      ? activeScenes
+        ? "Cycle: Auto unavailable with Scenes"
+        : "Cycle: Auto on export"
+      : steps.length === 0
+        ? "No active scenes"
+        : `Cycle: ${this.formatDuration(timeline.durationMs / 1000)}s`;
+  }
+
+  hasActiveScenes() {
+    return getSequenceSteps(this.editor.getLayers()).length > 0;
   }
 
   formatDuration(duration) {
