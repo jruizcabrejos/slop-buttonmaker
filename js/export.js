@@ -184,12 +184,18 @@ export class ExportController {
     );
 
     for (let frame = 0; frame < frameCount; frame += 1) {
+      const animationSampling = {
+        frameIndex: frame,
+        frameCount,
+        frameDelay
+      };
       const canvas = await this.captureButton(
         settings.rendering,
         frame * frameDelay,
         settings.duration,
         settings.sceneDurationsMs,
-        settings.scale
+        settings.scale,
+        animationSampling
       );
       const outputWidth = canvas.width;
       const outputHeight = canvas.height;
@@ -233,14 +239,21 @@ export class ExportController {
     animationTime = null,
     sequenceDuration = 2,
     sceneDurationsMs = {},
-    exportScale = 1
+    exportScale = 1,
+    animationSampling = null
   ) {
-    const imageSnapshots = this.snapshotLayerImages(animationTime);
+    const imageSnapshots = this.snapshotLayerImages(
+      animationTime,
+      animationSampling
+    );
     const backgroundSource = document.getElementById(
       "background_animation_source"
     );
     const backgroundSnapshot = Number.isFinite(animationTime)
-      ? this.media.getBackgroundAnimationFrame(animationTime) ||
+      ? this.media.getBackgroundAnimationFrame(
+        animationTime,
+        animationSampling
+      ) ||
         this.snapshotImage(backgroundSource)
       : this.snapshotImage(backgroundSource);
     const exportHost = this.createExportHost(
@@ -281,11 +294,15 @@ export class ExportController {
     }
   }
 
-  snapshotLayerImages(animationTime) {
+  snapshotLayerImages(animationTime, animationSampling = null) {
     return Array.from(this.editor.button.querySelectorAll("img")).map(
       image => (
         Number.isFinite(animationTime)
-          ? this.media.getLayerAnimationFrame(image, animationTime) ||
+          ? this.media.getLayerAnimationFrame(
+            image,
+            animationTime,
+            animationSampling
+          ) ||
             this.snapshotImage(image)
           : this.snapshotImage(image)
       )

@@ -11,6 +11,8 @@ export class GifAnimation {
   constructor(frames) {
     this.frames = frames;
     this.duration = frames.at(-1)?.endsAt || DEFAULT_FRAME_DELAY;
+    this.distinctFrames = this.getDistinctFrames(frames);
+    this.samplingPlans = new Map();
   }
 
   static async fromFile(file, maximumWidth, maximumHeight) {
@@ -97,13 +99,85 @@ export class GifAnimation {
     return new GifAnimation(frames);
   }
 
-  getFrameAt(timeMs) {
+  getFrameAt(timeMs, sampling = null) {
+    if (
+      Number.isInteger(sampling?.frameIndex) &&
+      Number.isInteger(sampling?.frameCount) &&
+      sampling.frameCount > 1 &&
+      Number.isFinite(sampling?.frameDelay) &&
+      sampling.frameDelay > 0
+    ) {
+      const plan = this.getSamplingPlan(
+        sampling.frameCount,
+        sampling.frameDelay
+      );
+      return plan[sampling.frameIndex % plan.length];
+    }
+
+    return this.getFrameForTime(timeMs).source;
+  }
+
+  getSamplingPlan(frameCount, frameDelay) {
+    const key = `${frameCount}:${frameDelay}`;
+
+    if (this.samplingPlans.has(key)) {
+      return this.samplingPlans.get(key);
+    }
+
+    let frames = Array.from(
+      { length: frameCount },
+      (_, index) => this.getFrameForTime(index * frameDelay)
+    );
+
+    // Keep native timing unless the export cadence aliases every sample
+    // to the same visual source frame.
+    if (
+      !this.hasVisualVariation(frames) &&
+      this.distinctFrames.length > 1
+    ) {
+      frames = Array.from(
+        { length: frameCount },
+        (_, index) => this.getFrameForTime(
+          (index + 0.5) * this.duration / frameCount
+        )
+      );
+
+      if (!this.hasVisualVariation(frames)) {
+        frames[frames.length - 1] = this.distinctFrames.find(
+          frame => frame.source !== frames[0].source
+        );
+      }
+    }
+
+    const plan = frames.map(frame => frame.source);
+    this.samplingPlans.set(key, plan);
+    return plan;
+  }
+
+  getFrameForTime(timeMs) {
     const position =
       ((timeMs % this.duration) + this.duration) % this.duration;
     return (
       this.frames.find(frame => position < frame.endsAt) ||
       this.frames.at(-1)
-    ).source;
+    );
+  }
+
+  getDistinctFrames(frames) {
+    const sources = new Set();
+
+    return frames.filter(frame => {
+      if (sources.has(frame.source)) {
+        return false;
+      }
+
+      sources.add(frame.source);
+      return true;
+    });
+  }
+
+  hasVisualVariation(frames) {
+    return frames.some(frame => frame.source !== frames[0]?.source);
   }
 
   static applyDisposal(context, previousFrame) {

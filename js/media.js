@@ -39,6 +39,8 @@ export class MediaController {
     this.backgroundRequest = 0;
     this.imageRequest = 0;
 
+    this.syncBackgroundSizeState();
+
     this.handleBackgroundUpload = this.handleBackgroundUpload.bind(this);
     this.handleImageUpload = this.handleImageUpload.bind(this);
     this.updateActiveImageDimensions =
@@ -106,6 +108,7 @@ export class MediaController {
       this.backgroundUrl = url;
       this.backgroundSource = probe;
       this.backgroundFile = file;
+      this.syncBackgroundSizeState();
       probe.id = "background_animation_source";
       probe.classList.add("export-animation-source");
       probe.alt = "";
@@ -396,12 +399,20 @@ export class MediaController {
     await Promise.all(animationTasks);
   }
 
-  getBackgroundAnimationFrame(timeMs) {
-    return this.getAnimationFrame(this.backgroundFile, timeMs);
+  getBackgroundAnimationFrame(timeMs, sampling = null) {
+    return this.getAnimationFrame(
+      this.backgroundFile,
+      timeMs,
+      sampling
+    );
   }
 
-  getLayerAnimationFrame(image, timeMs) {
-    return this.getAnimationFrame(this.layerFiles.get(image), timeMs);
+  getLayerAnimationFrame(image, timeMs, sampling = null) {
+    return this.getAnimationFrame(
+      this.layerFiles.get(image),
+      timeMs,
+      sampling
+    );
   }
 
   prepareForReset() {
@@ -460,6 +471,8 @@ export class MediaController {
       this.releaseAnimation(this.backgroundFile);
       this.backgroundFile = null;
     }
+
+    this.syncBackgroundSizeState();
   }
 
   releaseAllUrls() {
@@ -548,12 +561,14 @@ export class MediaController {
     }
   }
 
-  getAnimationFrame(file, timeMs) {
+  getAnimationFrame(file, timeMs, sampling = null) {
     if (!this.isGifFile(file)) {
       return null;
     }
 
-    return this.animations.get(file)?.getFrameAt(timeMs) || null;
+    return this.animations
+      .get(file)
+      ?.getFrameAt(timeMs, sampling) || null;
   }
 
   releaseAnimation(file) {
@@ -592,5 +607,9 @@ export class MediaController {
     for (const row of this.imageControlRows) {
       row.classList.toggle("hidden", hidden);
     }
+  }
+
+  syncBackgroundSizeState() {
+    this.backgroundSize.disabled = !this.backgroundFile;
   }
 }
