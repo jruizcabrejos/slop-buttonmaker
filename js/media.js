@@ -1,5 +1,6 @@
 import { BUTTON_HEIGHT, BUTTON_WIDTH } from "./editor.js";
 import { GifAnimation } from "./gif-animation.js";
+import { WebpAnimation } from "./webp-animation.js";
 
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/gif",
@@ -384,14 +385,14 @@ export class MediaController {
   async prepareGifExport() {
     const animationTasks = [];
 
-    if (this.isGifFile(this.backgroundFile)) {
+    if (this.getAnimationType(this.backgroundFile)) {
       animationTasks.push(this.ensureAnimation(this.backgroundFile));
     }
 
     for (const image of this.editor.button.querySelectorAll("img")) {
       const file = this.layerFiles.get(image);
 
-      if (this.isGifFile(file)) {
+      if (this.getAnimationType(file)) {
         animationTasks.push(this.ensureAnimation(file));
       }
     }
@@ -520,14 +521,26 @@ export class MediaController {
     );
   }
 
-  isGifFile(file) {
-    return Boolean(
-      file &&
-      (
-        file.type.toLowerCase() === "image/gif" ||
-        /\.gif$/i.test(file.name)
-      )
-    );
+  getAnimationType(file) {
+    if (!file) {
+      return null;
+    }
+
+    const type = file.type.toLowerCase();
+
+    if (type === "image/gif") {
+      return "gif";
+    }
+
+    if (type === "image/webp") {
+      return "webp";
+    }
+
+    if (/\.gif$/i.test(file.name)) {
+      return "gif";
+    }
+
+    return /\.webp$/i.test(file.name) ? "webp" : null;
   }
 
   async ensureAnimation(file) {
@@ -539,7 +552,10 @@ export class MediaController {
       return this.animationPromises.get(file);
     }
 
-    const animationPromise = GifAnimation.fromFile(
+    const Animation = this.getAnimationType(file) === "webp"
+      ? WebpAnimation
+      : GifAnimation;
+    const animationPromise = Animation.fromFile(
       file,
       ANIMATION_MAX_WIDTH,
       ANIMATION_MAX_HEIGHT
@@ -562,7 +578,7 @@ export class MediaController {
   }
 
   getAnimationFrame(file, timeMs, sampling = null) {
-    if (!this.isGifFile(file)) {
+    if (!this.getAnimationType(file)) {
       return null;
     }
 
